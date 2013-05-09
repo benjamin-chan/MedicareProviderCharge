@@ -17,6 +17,7 @@ Analyze CMS Medicare Provider Charge public use dataset. The data is documented 
 Load the required libraries.
 ```{r LoadLibraries, results='hide'}
 require(RCurl, quietly=TRUE)
+require(xtable, quietly=TRUE)
 require(ggplot2, quietly=TRUE)
 require(scales, quietly=TRUE)
 require(RColorBrewer, quietly=TRUE)
@@ -31,8 +32,33 @@ nrow(df)
 names(df)
 head(df)
 ```
-There are `r nrow(df)` rows in the dataset. So let's take a sample for testing purposes.
-```{r Sample}
-sample <- sample(seq(1:nrow(df)), 10000)
-dfSample <- df[sample,]
+Create a subset of Oregon institutions.
+```{r SubsetOregon}
+dfOR <- subset(df, Provider.State=="OR")
 ```
+Create a subset for OHSU.
+```{r SubsetOHSU}
+dfOHSU <- df[grep("^OHSU", df$Provider.Name),]
+```
+Not all DRGs are in the dataset. List the DRGs that are reported for OHSU.
+```{r ListDRGs, results='asis'}
+print(xtable(table(dfOHSU$DRG.Definition)), type="html")
+```
+Single out DRG 470 - MAJOR JOINT REPLACEMENT OR REATTACHMENT OF LOWER EXTREMITY W/O MCC for testing.
+```{r SubsetDRG470}
+dfDRG470 <- df[grep("^470", df$DRG.Definition),]
+```
+Plot histogram for DRG 470.
+```{r DRG470-Plot}
+qplot(dfDRG470$Average.Covered.Charges, main="DRG 470", xlab="Average Covered Charges")
+```
+Find data for DRG 470 from OHSU.
+```{r OHSU-DRG470, results='asis'}
+print(xtable(dfOHSU[grep("^470", dfOHSU$DRG.Definition),]), type="html")
+```
+Find OHSU's percentile for DRG 470.
+```{r OHSU-DRG470-percentile}
+x <- dfOHSU[grep("^470", dfOHSU$DRG.Definition), "Average.Covered.Charges"]
+p <- sum(dfDRG470$Average.Covered.Charge <= x) / nrow(dfDRG470)
+```
+For DRG 470, OHSU is at the `r format(p * 100, digits=3)` percentile.

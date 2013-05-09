@@ -180,7 +180,7 @@ hljs.initHighlightingOnLoad();
 <body>
 <h1>Medicare Provider Charge</h1>
 
-<p>Last update by Benjamin Chan (<a href="mailto:benjamin.ks.chan@gmail.com">benjamin.ks.chan@gmail.com</a>) on <code>2013-05-08 22:34:50</code> using <code>R version 2.15.3 (2013-03-01)</code>.</p>
+<p>Last update by Benjamin Chan (<a href="mailto:benjamin.ks.chan@gmail.com">benjamin.ks.chan@gmail.com</a>) on <code>2013-05-08 23:48:11</code> using <code>R version 2.15.3 (2013-03-01)</code>.</p>
 
 <p>Analyze CMS Medicare Provider Charge public use dataset. The data is documented and can be downloaded at the Medicare Provider Charge Data <a href="http://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Medicare-Provider-Charge-Data/index.html">website</a>.</p>
 
@@ -197,6 +197,7 @@ hljs.initHighlightingOnLoad();
 <p>Load the required libraries.</p>
 
 <pre><code class="r">require(RCurl, quietly = TRUE)
+require(xtable, quietly = TRUE)
 require(ggplot2, quietly = TRUE)
 require(scales, quietly = TRUE)
 require(RColorBrewer, quietly = TRUE)
@@ -268,11 +269,166 @@ nrow(df)
 ## 6                   20689                   4134
 </code></pre>
 
-<p>There are <code>163065</code> rows in the dataset. So let&#39;s take a sample for testing purposes.</p>
+<p>Create a subset of Oregon institutions.</p>
 
-<pre><code class="r">sample &lt;- sample(seq(1:nrow(df)), 10000)
-dfSample &lt;- df[sample, ]
+<pre><code class="r">dfOR &lt;- subset(df, Provider.State == &quot;OR&quot;)
 </code></pre>
+
+<p>Create a subset for OHSU.</p>
+
+<pre><code class="r">dfOHSU &lt;- df[grep(&quot;^OHSU&quot;, df$Provider.Name), ]
+</code></pre>
+
+<p>Not all DRGs are in the dataset. List the DRGs that are reported for OHSU.</p>
+
+<pre><code class="r">print(xtable(table(dfOHSU$DRG.Definition)), type = &quot;html&quot;)
+</code></pre>
+
+<!-- html table generated in R 2.15.3 by xtable 1.7-0 package -->
+
+<!-- Wed May  8 23:49:50 2013 -->
+
+<TABLE border=1>
+<TR> <TH>  </TH> <TH> V1 </TH>  </TR>
+  <TR> <TD align="right"> 039 - EXTRACRANIAL PROCEDURES W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 057 - DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 064 - INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 065 - INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 066 - INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 069 - TRANSIENT ISCHEMIA </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 074 - CRANIAL &amp  PERIPHERAL NERVE DISORDERS W/O MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 101 - SEIZURES W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 149 - DYSEQUILIBRIUM </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 176 - PULMONARY EMBOLISM W/O MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 177 - RESPIRATORY INFECTIONS &amp  INFLAMMATIONS W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 178 - RESPIRATORY INFECTIONS &amp  INFLAMMATIONS W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 189 - PULMONARY EDEMA &amp  RESPIRATORY FAILURE </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 190 - CHRONIC OBSTRUCTIVE PULMONARY DISEASE W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 191 - CHRONIC OBSTRUCTIVE PULMONARY DISEASE W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 192 - CHRONIC OBSTRUCTIVE PULMONARY DISEASE W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 193 - SIMPLE PNEUMONIA &amp  PLEURISY W MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 194 - SIMPLE PNEUMONIA &amp  PLEURISY W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 195 - SIMPLE PNEUMONIA &amp  PLEURISY W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 202 - BRONCHITIS &amp  ASTHMA W CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 203 - BRONCHITIS &amp  ASTHMA W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 207 - RESPIRATORY SYSTEM DIAGNOSIS W VENTILATOR SUPPORT 96+ HOURS </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 208 - RESPIRATORY SYSTEM DIAGNOSIS W VENTILATOR SUPPORT &lt 96 HOURS </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 238 - MAJOR CARDIOVASC PROCEDURES W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 243 - PERMANENT CARDIAC PACEMAKER IMPLANT W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 244 - PERMANENT CARDIAC PACEMAKER IMPLANT W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 246 - PERC CARDIOVASC PROC W DRUG-ELUTING STENT W MCC OR 4+ VESSELS/STENTS </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 247 - PERC CARDIOVASC PROC W DRUG-ELUTING STENT W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 249 - PERC CARDIOVASC PROC W NON-DRUG-ELUTING STENT W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 251 - PERC CARDIOVASC PROC W/O CORONARY ARTERY STENT W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 252 - OTHER VASCULAR PROCEDURES W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 253 - OTHER VASCULAR PROCEDURES W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 254 - OTHER VASCULAR PROCEDURES W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 280 - ACUTE MYOCARDIAL INFARCTION, DISCHARGED ALIVE W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 281 - ACUTE MYOCARDIAL INFARCTION, DISCHARGED ALIVE W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 282 - ACUTE MYOCARDIAL INFARCTION, DISCHARGED ALIVE W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 286 - CIRCULATORY DISORDERS EXCEPT AMI, W CARD CATH W MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 287 - CIRCULATORY DISORDERS EXCEPT AMI, W CARD CATH W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 291 - HEART FAILURE &amp  SHOCK W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 292 - HEART FAILURE &amp  SHOCK W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 293 - HEART FAILURE &amp  SHOCK W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 300 - PERIPHERAL VASCULAR DISORDERS W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 301 - PERIPHERAL VASCULAR DISORDERS W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 303 - ATHEROSCLEROSIS W/O MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 305 - HYPERTENSION W/O MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 308 - CARDIAC ARRHYTHMIA &amp  CONDUCTION DISORDERS W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 309 - CARDIAC ARRHYTHMIA &amp  CONDUCTION DISORDERS W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 310 - CARDIAC ARRHYTHMIA &amp  CONDUCTION DISORDERS W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 312 - SYNCOPE &amp  COLLAPSE </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 313 - CHEST PAIN </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 314 - OTHER CIRCULATORY SYSTEM DIAGNOSES W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 315 - OTHER CIRCULATORY SYSTEM DIAGNOSES W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 329 - MAJOR SMALL &amp  LARGE BOWEL PROCEDURES W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 330 - MAJOR SMALL &amp  LARGE BOWEL PROCEDURES W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 372 - MAJOR GASTROINTESTINAL DISORDERS &amp  PERITONEAL INFECTIONS W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 377 - G.I. HEMORRHAGE W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 378 - G.I. HEMORRHAGE W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 379 - G.I. HEMORRHAGE W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 389 - G.I. OBSTRUCTION W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 390 - G.I. OBSTRUCTION W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 391 - ESOPHAGITIS, GASTROENT &amp  MISC DIGEST DISORDERS W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 392 - ESOPHAGITIS, GASTROENT &amp  MISC DIGEST DISORDERS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 394 - OTHER DIGESTIVE SYSTEM DIAGNOSES W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 418 - LAPAROSCOPIC CHOLECYSTECTOMY W/O C.D.E. W CC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 419 - LAPAROSCOPIC CHOLECYSTECTOMY W/O C.D.E. W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 439 - DISORDERS OF PANCREAS EXCEPT MALIGNANCY W CC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 460 - SPINAL FUSION EXCEPT CERVICAL W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 469 - MAJOR JOINT REPLACEMENT OR REATTACHMENT OF LOWER EXTREMITY W MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 470 - MAJOR JOINT REPLACEMENT OR REATTACHMENT OF LOWER EXTREMITY W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 473 - CERVICAL SPINAL FUSION W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 480 - HIP &amp  FEMUR PROCEDURES EXCEPT MAJOR JOINT W MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 481 - HIP &amp  FEMUR PROCEDURES EXCEPT MAJOR JOINT W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 482 - HIP &amp  FEMUR PROCEDURES EXCEPT MAJOR JOINT W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 491 - BACK &amp  NECK PROC EXC SPINAL FUSION W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 536 - FRACTURES OF HIP &amp  PELVIS W/O MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 552 - MEDICAL BACK PROBLEMS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 563 - FX, SPRN, STRN &amp  DISL EXCEPT FEMUR, HIP, PELVIS &amp  THIGH W/O MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 602 - CELLULITIS W MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 603 - CELLULITIS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 638 - DIABETES W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 640 - MISC DISORDERS OF NUTRITION,METABOLISM,FLUIDS/ELECTROLYTES W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 641 - MISC DISORDERS OF NUTRITION,METABOLISM,FLUIDS/ELECTROLYTES W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 682 - RENAL FAILURE W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 683 - RENAL FAILURE W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 684 - RENAL FAILURE W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 689 - KIDNEY &amp  URINARY TRACT INFECTIONS W MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 690 - KIDNEY &amp  URINARY TRACT INFECTIONS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 698 - OTHER KIDNEY &amp  URINARY TRACT DIAGNOSES W MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 699 - OTHER KIDNEY &amp  URINARY TRACT DIAGNOSES W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 811 - RED BLOOD CELL DISORDERS W MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 812 - RED BLOOD CELL DISORDERS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 853 - INFECTIOUS &amp  PARASITIC DISEASES W O.R. PROCEDURE W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 870 - SEPTICEMIA OR SEVERE SEPSIS W MV 96+ HOURS </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 871 - SEPTICEMIA OR SEVERE SEPSIS W/O MV 96+ HOURS W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 872 - SEPTICEMIA OR SEVERE SEPSIS W/O MV 96+ HOURS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 885 - PSYCHOSES </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 897 - ALCOHOL/DRUG ABUSE OR DEPENDENCE W/O REHABILITATION THERAPY W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 917 - POISONING &amp  TOXIC EFFECTS OF DRUGS W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 918 - POISONING &amp  TOXIC EFFECTS OF DRUGS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 948 - SIGNS &amp  SYMPTOMS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+   </TABLE>
+
+<p>Single out DRG 470 - MAJOR JOINT REPLACEMENT OR REATTACHMENT OF LOWER EXTREMITY W/O MCC for testing.</p>
+
+<pre><code class="r">dfDRG470 &lt;- df[grep(&quot;^470&quot;, df$DRG.Definition), ]
+</code></pre>
+
+<p>Plot histogram for DRG 470.</p>
+
+<pre><code class="r">qplot(dfDRG470$Average.Covered.Charges, main = &quot;DRG 470&quot;, xlab = &quot;Average Covered Charges&quot;)
+</code></pre>
+
+<pre><code>## stat_bin: binwidth defaulted to range/30. Use &#39;binwidth = x&#39; to adjust
+## this.
+</code></pre>
+
+<p><img src="data:image/png;base64,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" alt="plot of chunk DRG470-Plot"/> </p>
+
+<p>Find data for DRG 470 from OHSU.</p>
+
+<pre><code class="r">print(xtable(dfOHSU[grep(&quot;^470&quot;, dfOHSU$DRG.Definition), ]), type = &quot;html&quot;)
+</code></pre>
+
+<!-- html table generated in R 2.15.3 by xtable 1.7-0 package -->
+
+<!-- Wed May  8 23:49:55 2013 -->
+
+<TABLE border=1>
+<TR> <TH>  </TH> <TH> DRG.Definition </TH> <TH> Provider.Id </TH> <TH> Provider.Name </TH> <TH> Provider.Street.Address </TH> <TH> Provider.City </TH> <TH> Provider.State </TH> <TH> Provider.Zip.Code </TH> <TH> Hospital.Referral.Region.Description </TH> <TH> Total.Discharges </TH> <TH> Average.Covered.Charges </TH> <TH> Average.Total.Payments </TH>  </TR>
+  <TR> <TD align="right"> 121470 </TD> <TD> 470 - MAJOR JOINT REPLACEMENT OR REATTACHMENT OF LOWER EXTREMITY W/O MCC </TD> <TD align="right"> 380009 </TD> <TD> OHSU HOSPITAL AND CLINICS </TD> <TD> 3181 SW SAM JACKSON PARK ROAD </TD> <TD> PORTLAND </TD> <TD> OR </TD> <TD align="right"> 97223 </TD> <TD> OR - Portland </TD> <TD align="right"> 124 </TD> <TD align="right"> 40783.97 </TD> <TD align="right"> 20098.85 </TD> </TR>
+   </TABLE>
+
+<p>Find OHSU&#39;s percentile for DRG 470.</p>
+
+<pre><code class="r">x &lt;- dfOHSU[grep(&quot;^470&quot;, dfOHSU$DRG.Definition), &quot;Average.Covered.Charges&quot;]
+p &lt;- sum(dfDRG470$Average.Covered.Charge &lt;= x)/nrow(dfDRG470)
+</code></pre>
+
+<p>For DRG 470, OHSU is at the <code>38.4</code> percentile.</p>
 
 </body>
 

@@ -1,7 +1,7 @@
 Medicare Provider Charge
 ========================
 
-Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on `2013-05-08 22:34:50` using `R version 2.15.3 (2013-03-01)`.
+Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on `2013-05-08 23:48:11` using `R version 2.15.3 (2013-03-01)`.
 
 Analyze CMS Medicare Provider Charge public use dataset. The data is documented and can be downloaded at the Medicare Provider Charge Data [website](http://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Medicare-Provider-Charge-Data/index.html).
 
@@ -18,6 +18,7 @@ Load the required libraries.
 
 ```r
 require(RCurl, quietly = TRUE)
+require(xtable, quietly = TRUE)
 require(ggplot2, quietly = TRUE)
 require(scales, quietly = TRUE)
 require(RColorBrewer, quietly = TRUE)
@@ -97,10 +98,167 @@ head(df)
 ## 6                   20689                   4134
 ```
 
-There are `163065` rows in the dataset. So let's take a sample for testing purposes.
+Create a subset of Oregon institutions.
 
 ```r
-sample <- sample(seq(1:nrow(df)), 10000)
-dfSample <- df[sample, ]
+dfOR <- subset(df, Provider.State == "OR")
 ```
 
+Create a subset for OHSU.
+
+```r
+dfOHSU <- df[grep("^OHSU", df$Provider.Name), ]
+```
+
+Not all DRGs are in the dataset. List the DRGs that are reported for OHSU.
+
+```r
+print(xtable(table(dfOHSU$DRG.Definition)), type = "html")
+```
+
+<!-- html table generated in R 2.15.3 by xtable 1.7-0 package -->
+<!-- Wed May  8 23:49:50 2013 -->
+<TABLE border=1>
+<TR> <TH>  </TH> <TH> V1 </TH>  </TR>
+  <TR> <TD align="right"> 039 - EXTRACRANIAL PROCEDURES W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 057 - DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 064 - INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 065 - INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 066 - INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 069 - TRANSIENT ISCHEMIA </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 074 - CRANIAL &amp  PERIPHERAL NERVE DISORDERS W/O MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 101 - SEIZURES W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 149 - DYSEQUILIBRIUM </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 176 - PULMONARY EMBOLISM W/O MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 177 - RESPIRATORY INFECTIONS &amp  INFLAMMATIONS W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 178 - RESPIRATORY INFECTIONS &amp  INFLAMMATIONS W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 189 - PULMONARY EDEMA &amp  RESPIRATORY FAILURE </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 190 - CHRONIC OBSTRUCTIVE PULMONARY DISEASE W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 191 - CHRONIC OBSTRUCTIVE PULMONARY DISEASE W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 192 - CHRONIC OBSTRUCTIVE PULMONARY DISEASE W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 193 - SIMPLE PNEUMONIA &amp  PLEURISY W MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 194 - SIMPLE PNEUMONIA &amp  PLEURISY W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 195 - SIMPLE PNEUMONIA &amp  PLEURISY W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 202 - BRONCHITIS &amp  ASTHMA W CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 203 - BRONCHITIS &amp  ASTHMA W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 207 - RESPIRATORY SYSTEM DIAGNOSIS W VENTILATOR SUPPORT 96+ HOURS </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 208 - RESPIRATORY SYSTEM DIAGNOSIS W VENTILATOR SUPPORT &lt 96 HOURS </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 238 - MAJOR CARDIOVASC PROCEDURES W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 243 - PERMANENT CARDIAC PACEMAKER IMPLANT W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 244 - PERMANENT CARDIAC PACEMAKER IMPLANT W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 246 - PERC CARDIOVASC PROC W DRUG-ELUTING STENT W MCC OR 4+ VESSELS/STENTS </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 247 - PERC CARDIOVASC PROC W DRUG-ELUTING STENT W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 249 - PERC CARDIOVASC PROC W NON-DRUG-ELUTING STENT W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 251 - PERC CARDIOVASC PROC W/O CORONARY ARTERY STENT W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 252 - OTHER VASCULAR PROCEDURES W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 253 - OTHER VASCULAR PROCEDURES W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 254 - OTHER VASCULAR PROCEDURES W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 280 - ACUTE MYOCARDIAL INFARCTION, DISCHARGED ALIVE W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 281 - ACUTE MYOCARDIAL INFARCTION, DISCHARGED ALIVE W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 282 - ACUTE MYOCARDIAL INFARCTION, DISCHARGED ALIVE W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 286 - CIRCULATORY DISORDERS EXCEPT AMI, W CARD CATH W MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 287 - CIRCULATORY DISORDERS EXCEPT AMI, W CARD CATH W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 291 - HEART FAILURE &amp  SHOCK W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 292 - HEART FAILURE &amp  SHOCK W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 293 - HEART FAILURE &amp  SHOCK W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 300 - PERIPHERAL VASCULAR DISORDERS W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 301 - PERIPHERAL VASCULAR DISORDERS W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 303 - ATHEROSCLEROSIS W/O MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 305 - HYPERTENSION W/O MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 308 - CARDIAC ARRHYTHMIA &amp  CONDUCTION DISORDERS W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 309 - CARDIAC ARRHYTHMIA &amp  CONDUCTION DISORDERS W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 310 - CARDIAC ARRHYTHMIA &amp  CONDUCTION DISORDERS W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 312 - SYNCOPE &amp  COLLAPSE </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 313 - CHEST PAIN </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 314 - OTHER CIRCULATORY SYSTEM DIAGNOSES W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 315 - OTHER CIRCULATORY SYSTEM DIAGNOSES W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 329 - MAJOR SMALL &amp  LARGE BOWEL PROCEDURES W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 330 - MAJOR SMALL &amp  LARGE BOWEL PROCEDURES W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 372 - MAJOR GASTROINTESTINAL DISORDERS &amp  PERITONEAL INFECTIONS W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 377 - G.I. HEMORRHAGE W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 378 - G.I. HEMORRHAGE W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 379 - G.I. HEMORRHAGE W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 389 - G.I. OBSTRUCTION W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 390 - G.I. OBSTRUCTION W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 391 - ESOPHAGITIS, GASTROENT &amp  MISC DIGEST DISORDERS W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 392 - ESOPHAGITIS, GASTROENT &amp  MISC DIGEST DISORDERS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 394 - OTHER DIGESTIVE SYSTEM DIAGNOSES W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 418 - LAPAROSCOPIC CHOLECYSTECTOMY W/O C.D.E. W CC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 419 - LAPAROSCOPIC CHOLECYSTECTOMY W/O C.D.E. W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 439 - DISORDERS OF PANCREAS EXCEPT MALIGNANCY W CC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 460 - SPINAL FUSION EXCEPT CERVICAL W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 469 - MAJOR JOINT REPLACEMENT OR REATTACHMENT OF LOWER EXTREMITY W MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 470 - MAJOR JOINT REPLACEMENT OR REATTACHMENT OF LOWER EXTREMITY W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 473 - CERVICAL SPINAL FUSION W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 480 - HIP &amp  FEMUR PROCEDURES EXCEPT MAJOR JOINT W MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 481 - HIP &amp  FEMUR PROCEDURES EXCEPT MAJOR JOINT W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 482 - HIP &amp  FEMUR PROCEDURES EXCEPT MAJOR JOINT W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 491 - BACK &amp  NECK PROC EXC SPINAL FUSION W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 536 - FRACTURES OF HIP &amp  PELVIS W/O MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 552 - MEDICAL BACK PROBLEMS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 563 - FX, SPRN, STRN &amp  DISL EXCEPT FEMUR, HIP, PELVIS &amp  THIGH W/O MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 602 - CELLULITIS W MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 603 - CELLULITIS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 638 - DIABETES W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 640 - MISC DISORDERS OF NUTRITION,METABOLISM,FLUIDS/ELECTROLYTES W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 641 - MISC DISORDERS OF NUTRITION,METABOLISM,FLUIDS/ELECTROLYTES W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 682 - RENAL FAILURE W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 683 - RENAL FAILURE W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 684 - RENAL FAILURE W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 689 - KIDNEY &amp  URINARY TRACT INFECTIONS W MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 690 - KIDNEY &amp  URINARY TRACT INFECTIONS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 698 - OTHER KIDNEY &amp  URINARY TRACT DIAGNOSES W MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 699 - OTHER KIDNEY &amp  URINARY TRACT DIAGNOSES W CC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 811 - RED BLOOD CELL DISORDERS W MCC </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 812 - RED BLOOD CELL DISORDERS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 853 - INFECTIOUS &amp  PARASITIC DISEASES W O.R. PROCEDURE W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 870 - SEPTICEMIA OR SEVERE SEPSIS W MV 96+ HOURS </TD> <TD align="right">   0 </TD> </TR>
+  <TR> <TD align="right"> 871 - SEPTICEMIA OR SEVERE SEPSIS W/O MV 96+ HOURS W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 872 - SEPTICEMIA OR SEVERE SEPSIS W/O MV 96+ HOURS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 885 - PSYCHOSES </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 897 - ALCOHOL/DRUG ABUSE OR DEPENDENCE W/O REHABILITATION THERAPY W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 917 - POISONING &amp  TOXIC EFFECTS OF DRUGS W MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 918 - POISONING &amp  TOXIC EFFECTS OF DRUGS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+  <TR> <TD align="right"> 948 - SIGNS &amp  SYMPTOMS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
+   </TABLE>
+
+Single out DRG 470 - MAJOR JOINT REPLACEMENT OR REATTACHMENT OF LOWER EXTREMITY W/O MCC for testing.
+
+```r
+dfDRG470 <- df[grep("^470", df$DRG.Definition), ]
+```
+
+Plot histogram for DRG 470.
+
+```r
+qplot(dfDRG470$Average.Covered.Charges, main = "DRG 470", xlab = "Average Covered Charges")
+```
+
+```
+## stat_bin: binwidth defaulted to range/30. Use 'binwidth = x' to adjust
+## this.
+```
+
+![plot of chunk DRG470-Plot](figure/DRG470-Plot.png) 
+
+Find data for DRG 470 from OHSU.
+
+```r
+print(xtable(dfOHSU[grep("^470", dfOHSU$DRG.Definition), ]), type = "html")
+```
+
+<!-- html table generated in R 2.15.3 by xtable 1.7-0 package -->
+<!-- Wed May  8 23:49:55 2013 -->
+<TABLE border=1>
+<TR> <TH>  </TH> <TH> DRG.Definition </TH> <TH> Provider.Id </TH> <TH> Provider.Name </TH> <TH> Provider.Street.Address </TH> <TH> Provider.City </TH> <TH> Provider.State </TH> <TH> Provider.Zip.Code </TH> <TH> Hospital.Referral.Region.Description </TH> <TH> Total.Discharges </TH> <TH> Average.Covered.Charges </TH> <TH> Average.Total.Payments </TH>  </TR>
+  <TR> <TD align="right"> 121470 </TD> <TD> 470 - MAJOR JOINT REPLACEMENT OR REATTACHMENT OF LOWER EXTREMITY W/O MCC </TD> <TD align="right"> 380009 </TD> <TD> OHSU HOSPITAL AND CLINICS </TD> <TD> 3181 SW SAM JACKSON PARK ROAD </TD> <TD> PORTLAND </TD> <TD> OR </TD> <TD align="right"> 97223 </TD> <TD> OR - Portland </TD> <TD align="right"> 124 </TD> <TD align="right"> 40783.97 </TD> <TD align="right"> 20098.85 </TD> </TR>
+   </TABLE>
+
+Find OHSU's percentile for DRG 470.
+
+```r
+x <- dfOHSU[grep("^470", dfOHSU$DRG.Definition), "Average.Covered.Charges"]
+p <- sum(dfDRG470$Average.Covered.Charge <= x)/nrow(dfDRG470)
+```
+
+For DRG 470, OHSU is at the `38.4` percentile.
