@@ -1,7 +1,7 @@
 Medicare Provider Charge
 ========================
 
-Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on 2013-05-09 15:39:24 using R version 3.0.0 (2013-04-03).
+Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on 2013-05-09 16:34:37 using R version 3.0.0 (2013-04-03).
 
 Analyze CMS Medicare Provider Charge public use dataset. The data is documented and can be downloaded at the Medicare Provider Charge Data [website](http://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Medicare-Provider-Charge-Data/index.html).
 
@@ -145,7 +145,7 @@ print(xtable(table(dfOHSU$DRG.Definition)), type = "html")
 ```
 
 <!-- html table generated in R 3.0.0 by xtable 1.7-1 package -->
-<!-- Thu May 09 15:39:30 2013 -->
+<!-- Thu May 09 16:34:43 2013 -->
 <TABLE border=1>
 <TR> <TH>  </TH> <TH> V1 </TH>  </TR>
   <TR> <TD align="right"> 039 - EXTRACRANIAL PROCEDURES W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
@@ -255,27 +255,134 @@ print(xtable(table(dfOHSU$DRG.Definition)), type = "html")
 Create MDC subsets.
 
 ```r
+dfMDC01S <- subset(df, 20 <= DRGnum & DRGnum <= 42)
+dfMDC02S <- subset(df, 113 <= DRGnum & DRGnum <= 117)
+dfMDC03S <- subset(df, 129 <= DRGnum & DRGnum <= 139)
+dfMDC04S <- subset(df, 163 <= DRGnum & DRGnum <= 168)
+dfMDC05S <- subset(df, 215 <= DRGnum & DRGnum <= 265)
+dfMDC06S <- subset(df, 326 <= DRGnum & DRGnum <= 358)
+dfMDC07S <- subset(df, 405 <= DRGnum & DRGnum <= 425)
 dfMDC08S <- subset(df, 453 <= DRGnum & DRGnum <= 517)
+dfMDC09S <- subset(df, 570 <= DRGnum & DRGnum <= 585)
+dfMDC10S <- subset(df, 614 <= DRGnum & DRGnum <= 630)
+dfMDC11S <- subset(df, 652 <= DRGnum & DRGnum <= 675)
+dfMDC12S <- subset(df, 707 <= DRGnum & DRGnum <= 718)
+dfMDC13S <- subset(df, 734 <= DRGnum & DRGnum <= 750)
+dfMDC14S <- subset(df, 765 <= DRGnum & DRGnum <= 770)
+dfMDC16S <- subset(df, 799 <= DRGnum & DRGnum <= 804)
+dfMDC21S <- subset(df, 901 <= DRGnum & DRGnum <= 909)
+dfMDC22S <- subset(df, 927 <= DRGnum & DRGnum <= 934)
 ```
 
 
-
-MDC 08: Diseases and disorders of the musculoskeletal system and connective tissue
-----------------------------------------------------------------------------------
-
-### Surgical DRGs
-
-Violin plots for the surgical DRGs in MDC 08.
+Create function for violin plotting.
 
 ```r
-ggplot(dfMDC08S, aes(x = factor(DRGnum), y = Average.Covered.Charges, fill = OHSU, 
-    color = OHSU)) + geom_violin(alpha = 1/2) + scale_y_log10(breaks = c(10000, 
-    20000, 40000, 80000, 160000, 320000), labels = c("$10K", "$20K", "$40K", 
-    "$80K", "$160K", "$320K")) + scale_fill_discrete("Provider", label = c("non-OHSU", 
-    "OHSU")) + scale_color_discrete("Provider", label = c("non-OHSU", "OHSU")) + 
-    labs(title = "MDC 08, Surgical DRGs\nNationwide", x = "DRG", y = "Average Covered Charges") + 
-    theme(legend.position = "bottom")
+Violin <- function(d, title) {
+    ggplot(d, aes(x = factor(DRGnum), y = Average.Covered.Charges, fill = OHSU, 
+        color = OHSU)) + geom_violin(alpha = 1/2) + scale_y_log10(breaks = c(10000, 
+        20000, 40000, 80000, 160000, 320000), labels = c("$10K", "$20K", "$40K", 
+        "$80K", "$160K", "$320K")) + scale_fill_discrete("Provider", label = c("non-OHSU", 
+        "OHSU")) + scale_color_discrete("Provider", label = c("non-OHSU", "OHSU")) + 
+        labs(title = paste(title, "Nationwide", sep = "\n"), x = "DRG", y = "Average Covered Charges") + 
+        theme(legend.position = "bottom")
+}
 ```
 
-![plot of chunk MDC08SViolinPlots](figure/MDC08SViolinPlots.png) 
+
+Violin plots for surgical DRGs by MDC.
+
+```r
+Violin(dfMDC01S, "MDC 01 Diseases & disorders of the nervous system")
+```
+
+![plot of chunk ViolinMDC01S](figure/ViolinMDC01S.png) 
+
+
+```r
+Violin(dfMDC02S, "MDC 02 Diseases & disorders of the eye")
+```
+
+
+```r
+Violin(dfMDC03S, "MDC 03 Diseases & disorders of the ear, nose, mouth & throat")
+```
+
+
+```r
+Violin(dfMDC04S, "MDC 04 Diseases & disorders of the respiratory system")
+```
+
+
+```r
+Violin(dfMDC05S, "MDC 05 Diseases & disorders of the circulatory system")
+```
+
+![plot of chunk ViolinMDC05S](figure/ViolinMDC05S.png) 
+
+
+```r
+Violin(dfMDC06S, "MDC 06 Diseases & disorders of the digestive system")
+```
+
+![plot of chunk ViolinMDC06S](figure/ViolinMDC06S.png) 
+
+
+```r
+Violin(dfMDC07S, "MDC 07 Diseases & disorders of the hepatobiliary system & pancreas")
+```
+
+![plot of chunk ViolinMDC07S](figure/ViolinMDC07S.png) 
+
+
+```r
+Violin(dfMDC08S, "MDC 08 Diseases & disorders of the musculoskeletal system & connective tissue")
+```
+
+![plot of chunk ViolinMDC08S](figure/ViolinMDC08S.png) 
+
+
+```r
+Violin(dfMDC09S, "MDC 09 Diseases & disorders of the skin, subcutaneous tissue & breast")
+```
+
+
+```r
+Violin(dfMDC10S, "MDC 10 Endocrine, nutritional & metabolic diseases & disorders")
+```
+
+
+```r
+Violin(dfMDC11S, "MDC 11 Diseases & disorders of the kidney & urinary tract")
+```
+
+
+```r
+Violin(dfMDC12S, "MDC 12 Diseases & disorders of the male reproductive system")
+```
+
+
+```r
+Violin(dfMDC13S, "MDC 13 Diseases & disorders of the female reproductive system")
+```
+
+
+```r
+Violin(dfMDC14S, "MDC 14 Pregnancy, childbirth & the puerperium")
+```
+
+
+```r
+Violin(dfMDC16S, "MDC 16 Disease & disorders of blood, blood forming organs, immunologic disorders")
+```
+
+
+```r
+Violin(dfMDC21S, "MDC 21 Injuries, poisonings & toxic effects of drugs")
+```
+
+
+```r
+Violin(dfMDC22S, "MDC 22 Burns")
+```
 

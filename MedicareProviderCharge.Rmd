@@ -61,22 +61,87 @@ print(xtable(table(dfOHSU$DRG.Definition)), type="html")
 
 Create MDC subsets.
 ```{r CreateMDCSubsets}
+dfMDC01S <- subset(df, 020 <= DRGnum & DRGnum <= 042)
+dfMDC02S <- subset(df, 113 <= DRGnum & DRGnum <= 117)
+dfMDC03S <- subset(df, 129 <= DRGnum & DRGnum <= 139)
+dfMDC04S <- subset(df, 163 <= DRGnum & DRGnum <= 168)
+dfMDC05S <- subset(df, 215 <= DRGnum & DRGnum <= 265)
+dfMDC06S <- subset(df, 326 <= DRGnum & DRGnum <= 358)
+dfMDC07S <- subset(df, 405 <= DRGnum & DRGnum <= 425)
 dfMDC08S <- subset(df, 453 <= DRGnum & DRGnum <= 517)
+dfMDC09S <- subset(df, 570 <= DRGnum & DRGnum <= 585)
+dfMDC10S <- subset(df, 614 <= DRGnum & DRGnum <= 630)
+dfMDC11S <- subset(df, 652 <= DRGnum & DRGnum <= 675)
+dfMDC12S <- subset(df, 707 <= DRGnum & DRGnum <= 718)
+dfMDC13S <- subset(df, 734 <= DRGnum & DRGnum <= 750)
+dfMDC14S <- subset(df, 765 <= DRGnum & DRGnum <= 770)
+dfMDC16S <- subset(df, 799 <= DRGnum & DRGnum <= 804)
+dfMDC21S <- subset(df, 901 <= DRGnum & DRGnum <= 909)
+dfMDC22S <- subset(df, 927 <= DRGnum & DRGnum <= 934)
 ```
 
+Create function for violin plotting.
+```{r DefineFunction}
+Violin <- function(d, title) {
+  ggplot(d, aes(x=factor(DRGnum), y=Average.Covered.Charges, fill=OHSU, color=OHSU)) +
+    geom_violin(alpha=1/2) +
+    scale_y_log10(breaks=c(1E4, 2E4, 4E4, 8E4, 16E4, 32E4), labels=c("$10K", "$20K", "$40K", "$80K", "$160K", "$320K")) +
+    scale_fill_discrete("Provider", label=c("non-OHSU", "OHSU")) +
+    scale_color_discrete("Provider", label=c("non-OHSU", "OHSU")) +
+    labs(title=paste(title, "Nationwide", sep="\n"), x="DRG", y="Average Covered Charges") +
+    theme(legend.position="bottom")
+}
+```
 
-MDC 08: Diseases and disorders of the musculoskeletal system and connective tissue
-----------------------------------------------------------------------------------
-
-### Surgical DRGs
-
-Violin plots for the surgical DRGs in MDC 08.
-```{r MDC08SViolinPlots}
-ggplot(dfMDC08S, aes(x=factor(DRGnum), y=Average.Covered.Charges, fill=OHSU, color=OHSU)) +
-  geom_violin(alpha=1/2) +
-  scale_y_log10(breaks=c(1E4, 2E4, 4E4, 8E4, 16E4, 32E4), labels=c("$10K", "$20K", "$40K", "$80K", "$160K", "$320K")) +
-  scale_fill_discrete("Provider", label=c("non-OHSU", "OHSU")) +
-  scale_color_discrete("Provider", label=c("non-OHSU", "OHSU")) +
-  labs(title="MDC 08, Surgical DRGs\nNationwide", x="DRG", y="Average Covered Charges") +
-  theme(legend.position="bottom")
+Violin plots for surgical DRGs by MDC.
+```{r ViolinMDC01S}
+Violin(dfMDC01S, "MDC 01 Diseases & disorders of the nervous system")
+```
+```{r ViolinMDC02S, eval=FALSE}
+Violin(dfMDC02S, "MDC 02 Diseases & disorders of the eye")
+```
+```{r ViolinMDC03S, eval=FALSE}
+Violin(dfMDC03S, "MDC 03 Diseases & disorders of the ear, nose, mouth & throat")
+```
+```{r ViolinMDC04S, eval=FALSE}
+Violin(dfMDC04S, "MDC 04 Diseases & disorders of the respiratory system")
+```
+```{r ViolinMDC05S}
+Violin(dfMDC05S, "MDC 05 Diseases & disorders of the circulatory system")
+```
+```{r ViolinMDC06S}
+Violin(dfMDC06S, "MDC 06 Diseases & disorders of the digestive system")
+```
+```{r ViolinMDC07S}
+Violin(dfMDC07S, "MDC 07 Diseases & disorders of the hepatobiliary system & pancreas")
+```
+```{r ViolinMDC08S}
+Violin(dfMDC08S, "MDC 08 Diseases & disorders of the musculoskeletal system & connective tissue")
+```
+```{r ViolinMDC09S, eval=FALSE}
+Violin(dfMDC09S, "MDC 09 Diseases & disorders of the skin, subcutaneous tissue & breast")
+```
+```{r ViolinMDC10S, eval=FALSE}
+Violin(dfMDC10S, "MDC 10 Endocrine, nutritional & metabolic diseases & disorders")
+```
+```{r ViolinMDC11S, eval=FALSE}
+Violin(dfMDC11S, "MDC 11 Diseases & disorders of the kidney & urinary tract")
+```
+```{r ViolinMDC12S, eval=FALSE}
+Violin(dfMDC12S, "MDC 12 Diseases & disorders of the male reproductive system")
+```
+```{r ViolinMDC13S, eval=FALSE}
+Violin(dfMDC13S, "MDC 13 Diseases & disorders of the female reproductive system")
+```
+```{r ViolinMDC14S, eval=FALSE}
+Violin(dfMDC14S, "MDC 14 Pregnancy, childbirth & the puerperium")
+```
+```{r ViolinMDC16S, eval=FALSE}
+Violin(dfMDC16S, "MDC 16 Disease & disorders of blood, blood forming organs, immunologic disorders")
+```
+```{r ViolinMDC21S, eval=FALSE}
+Violin(dfMDC21S, "MDC 21 Injuries, poisonings & toxic effects of drugs")
+```
+```{r ViolinMDC22S, eval=FALSE}
+Violin(dfMDC22S, "MDC 22 Burns")
 ```
