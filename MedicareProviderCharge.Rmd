@@ -1,0 +1,38 @@
+Medicare Provider Charge
+========================
+
+Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on `r paste(Sys.time())` using `r R.version.string`.
+
+Analyze CMS Medicare Provider Charge public use dataset. The data is documented and can be downloaded at the Medicare Provider Charge Data [website](http://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Medicare-Provider-Charge-Data/index.html).
+
+> As part of the Obama administration’s work to make our health care system more affordable and accountable, data are being released that show significant variation across the country and within communities in what hospitals charge for common inpatient services.
+
+> The data provided here include hospital-specific charges for the more than 3,000 U.S. hospitals that receive Medicare Inpatient Prospective Payment System (IPPS) payments for the top 100 most frequently billed discharges, paid under Medicare based on a rate per discharge using the Medicare Severity Diagnosis Related Group (MS-DRG) for Fiscal Year (FY) 2011. These DRGs represent almost 7 million discharges or 60 percent of total Medicare IPPS discharges.
+
+> Hospitals determine what they will charge for items and services provided to patients and these charges are the amount the hospital bills for an item or service. The Total Payment amount includes the MS-DRG amount, bill total per diem, beneficiary primary payer claim payment amount, beneficiary Part A coinsurance amount, beneficiary deductible amount, beneficiary blood deducible amount and DRG outlier amount.
+
+> For these DRGs, average charges and average Medicare payments are calculated at the individual hospital level. Users will be able to make comparisons between the amount charged by individual hospitals within local markets, and nationwide, for services that might be furnished in connection with a particular inpatient stay.
+
+
+Load the required libraries.
+```{r LoadLibraries, results='hide'}
+require(RCurl, quietly=TRUE)
+require(ggplot2, quietly=TRUE)
+require(scales, quietly=TRUE)
+require(RColorBrewer, quietly=TRUE)
+```
+
+
+Get data from public Dropbox file where the data was downloaded to. Read the entire dataset.
+```{r ReadData}
+url <- getURL("https://dl.dropboxusercontent.com/u/386956/Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv")
+df <- read.csv(textConnection(url), header=TRUE, sep=",")
+nrow(df)
+names(df)
+head(df)
+```
+There are `r nrow(df)` rows in the dataset. So let's take a sample for testing purposes.
+```{r Sample}
+sample <- sample(seq(1:nrow(df)), 10000)
+dfSample <- df[sample,]
+```
