@@ -180,12 +180,12 @@ hljs.initHighlightingOnLoad();
 <body>
 <h1>Medicare Provider Charge</h1>
 
-<p>Last update by Benjamin Chan (<a href="mailto:benjamin.ks.chan@gmail.com">benjamin.ks.chan@gmail.com</a>) on <code>2013-05-08 23:48:11</code> using <code>R version 2.15.3 (2013-03-01)</code>.</p>
+<p>Last update by Benjamin Chan (<a href="mailto:benjamin.ks.chan@gmail.com">benjamin.ks.chan@gmail.com</a>) on 2013-05-09 15:39:24 using R version 3.0.0 (2013-04-03).</p>
 
 <p>Analyze CMS Medicare Provider Charge public use dataset. The data is documented and can be downloaded at the Medicare Provider Charge Data <a href="http://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Medicare-Provider-Charge-Data/index.html">website</a>.</p>
 
 <blockquote>
-<p>As part of the Obama administration’s work to make our health care system more affordable and accountable, data are being released that show significant variation across the country and within communities in what hospitals charge for common inpatient services.</p>
+<p>As part of the Obama administrationâs work to make our health care system more affordable and accountable, data are being released that show significant variation across the country and within communities in what hospitals charge for common inpatient services.</p>
 
 <p>The data provided here include hospital-specific charges for the more than 3,000 U.S. hospitals that receive Medicare Inpatient Prospective Payment System (IPPS) payments for the top 100 most frequently billed discharges, paid under Medicare based on a rate per discharge using the Medicare Severity Diagnosis Related Group (MS-DRG) for Fiscal Year (FY) 2011. These DRGs represent almost 7 million discharges or 60 percent of total Medicare IPPS discharges.</p>
 
@@ -193,6 +193,8 @@ hljs.initHighlightingOnLoad();
 
 <p>For these DRGs, average charges and average Medicare payments are calculated at the individual hospital level. Users will be able to make comparisons between the amount charged by individual hospitals within local markets, and nationwide, for services that might be furnished in connection with a particular inpatient stay.</p>
 </blockquote>
+
+<hr/>
 
 <p>Load the required libraries.</p>
 
@@ -203,11 +205,25 @@ require(scales, quietly = TRUE)
 require(RColorBrewer, quietly = TRUE)
 </code></pre>
 
-<p>Get data from public Dropbox file where the data was downloaded to. Read the entire dataset.</p>
+<p>RCurl with https is being tempermental. Copy the dataset to the local folder and <code>read.table</code> from there. Read the entire dataset. </p>
 
-<pre><code class="r">url &lt;- getURL(&quot;https://dl.dropboxusercontent.com/u/386956/Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv&quot;)
-df &lt;- read.csv(textConnection(url), header = TRUE, sep = &quot;,&quot;)
-nrow(df)
+<pre><code class="r"># url &lt;-
+# getURL(&#39;https://dl.dropboxusercontent.com/u/386956/Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv&#39;)
+# df &lt;- read.csv(textConnection(url), header=TRUE, sep=&#39;,&#39;)
+df &lt;- read.csv(&quot;Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv&quot;, header = TRUE, 
+    sep = &quot;,&quot;)
+</code></pre>
+
+<p>Create some new fields.</p>
+
+<pre><code class="r">df$DRGnum &lt;- as.numeric(substr(df$DRG.Definition, 1, 3))
+df$DRGlab &lt;- substr(df$DRG.Definition, 7, max(nchar(as.character(df$DRG.Definition))))
+df$OHSU &lt;- grepl(&quot;^OHSU&quot;, df$Provider.Name)
+</code></pre>
+
+<p>Show the number of rows, the field names, and the first few rows.</p>
+
+<pre><code class="r">nrow(df)
 </code></pre>
 
 <pre><code>## [1] 163065
@@ -226,7 +242,10 @@ nrow(df)
 ##  [8] &quot;Hospital.Referral.Region.Description&quot;
 ##  [9] &quot;Total.Discharges&quot;                    
 ## [10] &quot;Average.Covered.Charges&quot;             
-## [11] &quot;Average.Total.Payments&quot;
+## [11] &quot;Average.Total.Payments&quot;              
+## [12] &quot;DRGnum&quot;                              
+## [13] &quot;DRGlab&quot;                              
+## [14] &quot;OHSU&quot;
 </code></pre>
 
 <pre><code class="r">head(df)
@@ -260,33 +279,44 @@ nrow(df)
 ## 4                          AL - Dothan              169
 ## 5                          AL - Dothan               33
 ## 6                          AL - Dothan               37
-##   Average.Covered.Charges Average.Total.Payments
-## 1                   32963                   5777
-## 2                   20313                   4895
-## 3                   38820                  10260
-## 4                   27345                   6542
-## 5                   17606                   4596
-## 6                   20689                   4134
+##   Average.Covered.Charges Average.Total.Payments DRGnum
+## 1                   32963                   5777     39
+## 2                   20313                   4895     57
+## 3                   38820                  10260     64
+## 4                   27345                   6542     65
+## 5                   17606                   4596     66
+## 6                   20689                   4134     69
+##                                                      DRGlab  OHSU
+## 1                        EXTRACRANIAL PROCEDURES W/O CC/MCC FALSE
+## 2             DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC FALSE
+## 3      INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W MCC FALSE
+## 4       INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W CC FALSE
+## 5 INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W/O CC/MCC FALSE
+## 6                                        TRANSIENT ISCHEMIA FALSE
 </code></pre>
 
-<p>Create a subset of Oregon institutions.</p>
+<p>Create geographic subsets of</p>
+
+<ul>
+<li>Oregon providers</li>
+<li>Portland metro providers</li>
+<li>OHSU</li>
+</ul>
 
 <pre><code class="r">dfOR &lt;- subset(df, Provider.State == &quot;OR&quot;)
+dfPDXMetro &lt;- df[grep(&quot;^OR - Portland&quot;, df$Hospital.Referral.Region.Description), 
+    ]
+dfOHSU &lt;- df[grep(&quot;^OHSU&quot;, df$Provider.Name), ]
 </code></pre>
 
-<p>Create a subset for OHSU.</p>
-
-<pre><code class="r">dfOHSU &lt;- df[grep(&quot;^OHSU&quot;, df$Provider.Name), ]
-</code></pre>
-
-<p>Not all DRGs are in the dataset. List the DRGs that are reported for OHSU.</p>
+<p>Not all DRGs are in the dataset. List the DRGs that are reported for OHSU. DRGs with a <em>1</em> to the right are those reported for OHSU</p>
 
 <pre><code class="r">print(xtable(table(dfOHSU$DRG.Definition)), type = &quot;html&quot;)
 </code></pre>
 
-<!-- html table generated in R 2.15.3 by xtable 1.7-0 package -->
+<!-- html table generated in R 3.0.0 by xtable 1.7-1 package -->
 
-<!-- Wed May  8 23:49:50 2013 -->
+<!-- Thu May 09 15:39:30 2013 -->
 
 <TABLE border=1>
 <TR> <TH>  </TH> <TH> V1 </TH>  </TR>
@@ -392,43 +422,27 @@ nrow(df)
   <TR> <TD align="right"> 948 - SIGNS &amp  SYMPTOMS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
    </TABLE>
 
-<p>Single out DRG 470 - MAJOR JOINT REPLACEMENT OR REATTACHMENT OF LOWER EXTREMITY W/O MCC for testing.</p>
+<p>Create MDC subsets.</p>
 
-<pre><code class="r">dfDRG470 &lt;- df[grep(&quot;^470&quot;, df$DRG.Definition), ]
+<pre><code class="r">dfMDC08S &lt;- subset(df, 453 &lt;= DRGnum &amp; DRGnum &lt;= 517)
 </code></pre>
 
-<p>Plot histogram for DRG 470.</p>
+<h2>MDC 08: Diseases and disorders of the musculoskeletal system and connective tissue</h2>
 
-<pre><code class="r">qplot(dfDRG470$Average.Covered.Charges, main = &quot;DRG 470&quot;, xlab = &quot;Average Covered Charges&quot;)
+<h3>Surgical DRGs</h3>
+
+<p>Violin plots for the surgical DRGs in MDC 08.</p>
+
+<pre><code class="r">ggplot(dfMDC08S, aes(x = factor(DRGnum), y = Average.Covered.Charges, fill = OHSU, 
+    color = OHSU)) + geom_violin(alpha = 1/2) + scale_y_log10(breaks = c(10000, 
+    20000, 40000, 80000, 160000, 320000), labels = c(&quot;$10K&quot;, &quot;$20K&quot;, &quot;$40K&quot;, 
+    &quot;$80K&quot;, &quot;$160K&quot;, &quot;$320K&quot;)) + scale_fill_discrete(&quot;Provider&quot;, label = c(&quot;non-OHSU&quot;, 
+    &quot;OHSU&quot;)) + scale_color_discrete(&quot;Provider&quot;, label = c(&quot;non-OHSU&quot;, &quot;OHSU&quot;)) + 
+    labs(title = &quot;MDC 08, Surgical DRGs\nNationwide&quot;, x = &quot;DRG&quot;, y = &quot;Average Covered Charges&quot;) + 
+    theme(legend.position = &quot;bottom&quot;)
 </code></pre>
 
-<pre><code>## stat_bin: binwidth defaulted to range/30. Use &#39;binwidth = x&#39; to adjust
-## this.
-</code></pre>
-
-<p><img src="data:image/png;base64,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" alt="plot of chunk DRG470-Plot"/> </p>
-
-<p>Find data for DRG 470 from OHSU.</p>
-
-<pre><code class="r">print(xtable(dfOHSU[grep(&quot;^470&quot;, dfOHSU$DRG.Definition), ]), type = &quot;html&quot;)
-</code></pre>
-
-<!-- html table generated in R 2.15.3 by xtable 1.7-0 package -->
-
-<!-- Wed May  8 23:49:55 2013 -->
-
-<TABLE border=1>
-<TR> <TH>  </TH> <TH> DRG.Definition </TH> <TH> Provider.Id </TH> <TH> Provider.Name </TH> <TH> Provider.Street.Address </TH> <TH> Provider.City </TH> <TH> Provider.State </TH> <TH> Provider.Zip.Code </TH> <TH> Hospital.Referral.Region.Description </TH> <TH> Total.Discharges </TH> <TH> Average.Covered.Charges </TH> <TH> Average.Total.Payments </TH>  </TR>
-  <TR> <TD align="right"> 121470 </TD> <TD> 470 - MAJOR JOINT REPLACEMENT OR REATTACHMENT OF LOWER EXTREMITY W/O MCC </TD> <TD align="right"> 380009 </TD> <TD> OHSU HOSPITAL AND CLINICS </TD> <TD> 3181 SW SAM JACKSON PARK ROAD </TD> <TD> PORTLAND </TD> <TD> OR </TD> <TD align="right"> 97223 </TD> <TD> OR - Portland </TD> <TD align="right"> 124 </TD> <TD align="right"> 40783.97 </TD> <TD align="right"> 20098.85 </TD> </TR>
-   </TABLE>
-
-<p>Find OHSU&#39;s percentile for DRG 470.</p>
-
-<pre><code class="r">x &lt;- dfOHSU[grep(&quot;^470&quot;, dfOHSU$DRG.Definition), &quot;Average.Covered.Charges&quot;]
-p &lt;- sum(dfDRG470$Average.Covered.Charge &lt;= x)/nrow(dfDRG470)
-</code></pre>
-
-<p>For DRG 470, OHSU is at the <code>38.4</code> percentile.</p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfgAAAH4CAMAAACR9g9NAAABDlBMVEUAAAAAADoAAGYAOjoAOpAAZrYAv8Q6AAA6ADo6AGY6OgA6Ojo6OpA6ZrY6kNtmAABmADpmAGZmZmZmkJBmkNtmtv952Nt/f39/f5V/f6t/lcF/q9aQOgCQOjqQOmaQkGaQtpCQ27aQ29uQ2/+Vf3+Vf6uVlcGVq9aVweurf5Wrf6urlcGrq6urwcGr1v+2ZgC2Zjq225C2/7a2///BlX/BlZXBlavBq3/Bq8HBwdbB1uvB1v/B6//Wq3/Wq5XW///bkDrbkGbb25Db29vb2//b/7bb/9vb///l5eXrwZXr1qvr///vrany8vL1tK/4dm37urb/tmb/1qv/25D/68H//7b//9b//9v//+v///8Wnw+BAAAACXBIWXMAAAsSAAALEgHS3X78AAAc7ElEQVR4nO2dDX/cNnLG164lJRdnbTdVdLHlS3q6S9W71JuL3WvTRPVe2sTy2TW9WisSv/8XKV7IXZAEwQFAkCDxzE+W6F0+xBB/DgCCL7PIYUnaYmwHYOMYwCdqAJ+oAXyiBvCJGsAnagCfqAF8ogbwiRrAJ2oAn6gBfKIG8IkawCdqAJ+oAXyiBvCJGsAnarMBf/3g7nP25+b07vOb0wWzO2fyY7a4LNbhXyyLDw9U8WpR+0Dd8MMz/Sf7YuTS4t6rclt36pL4bD7gH/7mmP3ZfvIxA8+XNgv2e3t0zDlLqDenB2x5Kf7enC732tWB/JJcVAG+LEYuiU3KskTZcduMwH/Jq3z9WQk+X997VeDdyAjcfsT+bO69un7Avl8fKFL+9ebuc/EF+3vz9EsWtKxduPMl+5B9uz0S4cz+LBjSCnhZjFhimxbHkPwwX0cd+TMC/8+Pnuc3v/vLDjzjLFDvbCPg8e+rEb8L9h34U7Ymbxu2RwI8+5yvL75eyUMh34FnZezBK/0C2474F6nNCPzZ6jjffrrdgWecqhW/FuD5sbBaVNpi3ufz7/bgl8VhshaY1c1s6uDFUXEsFpb8sFJWDLm/vjYn8Otlvl4SwHNCZZu8kz9YHCjgy75AYl7LYZs8QrTgxeDuIJfgeY9w54x/GHFPPyfw2/u/PD3bapr6m/8Vq5RN/WYX+aqJI8IInmFfNiO+bOpX/CArm3q59VXEnfycwN88/er+q61mcCfG9kU4Mup18LJdYNQr4JtNvfikAX43uBPki4akPOLUc4e4bE7g2Th6mW9rp3PL5umcbOrL5pt/XjCWo74CvBzOlYM73gBw/tsjNtzXn86JYq4fyOH/HXG0NJqVeGxW4Hk9C/CECRzOZ1V+sVqUo7vFna/KI0eczsmBOuu1RTizHv471jA0J3DkqF5MAq0XC9m5rxYxd/KzAe9i23/qWmOzbxdmZkmD/5upIeazPhH30b6WNHizrZVOYn4G8IkawCdqAM/tf8Z2YHhLELw4jVdn1cUZe+OquyIovot89t3OkgTPz71r4CkG8NM2eeWeg5fX1/lEzAGPar7Ar8c+/OpIXGQ5FnO963s/s++Ki/PlOtO3JMH//qmY4SuvrxdNvbgsv+L3aTDA7C+fpP1kma+W4js5fysah/UcyCcJ/mz76a6p3+zAi0+USzUbxv4fD1jgl5dp+Gf8bzFDO21LE3y+Oi4w8+vrBXgxPcuWS/DXj55/+9X9nx/tLswyiZiIn8W8TqLgt/d/4k29vL7eAv7m6e9/992jv9x/pYKfQysvLFHw+eqz4oaM9qY+X392/5enX8qDQm3qZ2GpgucjtfL6emNwV4DfsAbh298cl9/JwR07WDbx3ldDt1TB8/suyuvr+bp6OleCF/df8L/yu93p3By4pwgexg3gEzWAT9Q8wV+arev7qWmidq5DA/AemqidA/hwmqidA/hwmqidA/hwmqidA/hwmqidA/hwmqidA/hwmqidA/hwmqidA/hwmqidA/hwmqidA/hwmqidA/hwmqidA/hwmqidA/hwmqidA/hwmqidGxt8lgX1f1RN1M4BfDhN1M4BfDhN1M4NCv7/mpZl+2Xd910WsyZq5zo0/YLXHFmI+Dg1AO+hido5gA+nido5gA+nido5gA+nidq5scFfAnyUGoD30ETtHMCH00TtHMCH00TtHMCH00TtHMCH00TtHMCH00Tt3NjgcR4fpwbgPTRROwfw4TRROwfw4TRROwfw4TRROwfw4TRROwfw4TRROwfw4TRROwfw4TRROwfw4TRROwfw4TRRO9cX+IuTk3Px+1l+++Lk5PEbtvzbH/MPX79hnz4B+KlpqOCvnnz4r3//8epJ/uufXrLf+cWzq8dv2A8Hf/Es0YhX9y1oQSOC//CHf/tBLDDw/M/rZ6/P+TIDX3A/YaYRZlnbJmnmqw9pMftmaYY+/oI37+z3Of8PC/rXrM3/KwP/Hye7gA8R8S5RhYjv1tDBf/jhtWDOf/NOvYj4Pzxj+AE+bEHj9vE/XJxfnXPgty94jO/7+F///AbggxY08qj+SfH7gnfn58qo/urxG4APWdDITX37d6VpCgD4HgpKcQIH4MNoAN5DA/AAH7YggKcZwHdrAN5DA/AAH7YggKcZwHdrAN5DA/AAH7YggKcZwHdrAN5DA/AAH7YggKcZwHdrAN5DA/DhwGfvAR7gqQbw3Zrw4N/uawfgHQuaIPjsLcD7FwTwNAP4bk384N/a1+5g4GM+KgcF30x9kr17t09K45BaJXuv6Kk2VNoXBn6YgiaYkwYR30dB0Ud8c/vDgR/+4czsLcBPFLznHAPAAzzdAJ5irG4BHuDNqyo7Rd68g0ZRA3wreMZdIQ/wbgUBvHFVZafIm3fQKGqAB3i6ATzFOHgieYC30gC8rUZRk8GrqwE8xQA+lCZu8EweN3h73wCeYlGDF84NAz7AdX+At9XsxQDfCl5w35NzBE+rXYCvGsD3rNmLAT4UeC6ngne6jRvgAR7gIwRPqd6RwFt3QwBPsKjBF84BfP/ghRrgLwHeuDLAV60v8DInjUxQ8bp4k3VnTpq+wBOq1wW81wOdiYCXOWnyq5MvXub0nDQzBr9zjnTKoSxPDLzMSXP7PU9H8fobHvGEnDTZ+8Lccrfs5JQNuOSH8ckpY7Vvvrlrwue+6cxJw8GLxCTPCDlpioDfRYXdwS7ViPjLkQd3MieNiHhG+uqckJMG4MuVleWJgZc5aST4KxHxhJw0/YHvrt7RwJNOOZTliYEvctII8HxUf54TctLMGLzi3MzBu+SkAfhybWV5cuApVvfXB3whBvjLCYMvKgfg7Qtq6Kk2Ivg9d3/wndU7HnjKKYeyDPAdFjX4inMAPznwzk/yAjzAA3y/4EvxHMBnnuBDvE8vIHiFe1E5MwVv5RvAd1gdfFftDgq+5lwn+LcOzql6KniLA2w+4B0gAnwb+PW9V+vF4hjgzc7NDvz1wzP2s/34uQv4CndZORb7vFMD/BjgHz1nMR8J+I7qHRJ8wzmLg3IS4PP14s7ZxrGpHxa802vVAL4NvK1VnIgevPM7+ADeAL7G3RL8Xj0J8Bbd0DTA35wu7v388KwP8Hzf/cAba3dI8BrnZgb+5nS5vf9qc+/V0OAVMcCPM6pn4Nnv2YLfi/zAd/VDEwMvI34dS8SbandA8Frn5gWe9/GLBZ27kgYle9ewjJxaRRW/r2zBJLHOfZOpmySnfWlxjuqbU2Ieauobdb2RctI0Ap4HBf38Wh/xhrgaLuJbnDO3Rs6XAeUGJnQ65wO+oqWDt4WYvbXXXI4DPsAbNI3grx8shN2lju4UF+YKvtU5om9hwdPHEkbw+WrJfq0PyCd0igtBwLfXLsCLFXsCL0/krh99Rz2hU1xwB1+VRga+3bk5gWenczzi7/10f8iIN4Fvq14XiFllg97giQflJMCztp718AfXD6jX5xQXAL6imRp4S1NcmCf42m7R+iFf8Bbvxe+1jx8YvLFu22o3ZvBV3yYB/uYp/cLc5MBn1e0BvGLFeTz5NL4P8HXhhMCbfHO6GrTbAPmduRPu46MG3+EcwAcEr68Ch/46q24P4FVbD97UN3QAPwL464dnm4N8fTBgxHeD19WBT7MdPfjM4r34/Z3OyR+A13tHGoD0Ap5GvsfTOfbj9EBF9OCz2uZcxh+zBZ8z5pvFYknl7g++KZs8+Jpv1uCztyOAt7Wqu4HAa+pgAuBtLwpU9ETwNvf2AXyhAnjVNgOfzmlUNuDdonca4CnkewN/bfEQzZjg/ZrtuMFnZTmDgh/66hwNfKMOHMBn9a0BvGpr+oA+CvB0iADfDr68x1bt4y/2Lyw3JyNyAq8RUcC7QBwMfL01cgZPIB9uVC9TEskUBeZkRBMCL0W9gDeMOx3BZ/tyxgQvUxIx2FddyYiUREIWCYWaIr1lbTJy1p6sdWte7jU3lRm+syuTUn/OWYuq4FcHvMGv3GkpUhJd8V/mZERBI7528DtEfNbYmst0slXEW10UqMmpb9DsKeLlY7LXD9QRHk9J9PpJ/uGPL83JiEYCT4UI8Abw5Vn8dn9XvUxJJJGbkxFNCbwQxQk+U8sZDHxxFq+ezYuURLcvTnjzbkxGNCB4l+gFeAP4m1PZu1eenDOnJNLtLx28jnsY8FlzcxMA30m+rz5++xFv67dHLu+5A/imhj5hUJcPDF5O4dAv0QC8aVLRBXxWLacbvLLKhC7Ljgaeq1wuGQP8xMA3CgL4iYCvVEE64LvIpwye1F/PFHz2FuBtC3K7LawbfLM1sgGf1csZBrzusmzC4GmzSybw9MuAdfXgEV+8/KjniD/cm6GWWuu2VgMOp2YBwRtmkycEvnz5UdQRbw/eaTo5CvBm8v2BL19+5PAuW4DXiCYDXr7Llt7SA/xcwNuasZqGAU84NdOVk0UIfi8GeE0FRAbeMKvYA3gj+X6b+gFTkziB76mcTvBk53oDr2iHBj9wapKBwGuLmQv4/Qqep3NDpiYB+LYSSa9Hz6rf+0f8YKlJ5gdec8YxCfDWqUkMFeV2muUAvnMQOR540rSiTjs4eFsz1FQg8A5nDwAvvjaBt35atpIYp56KqDM/jiaBUTUZkSb1j0PSI20xWVeOILJzmUFEqAStlpSRKat+7ZOMyONdtmEj3tTSzyTiK9L3LdvXKPqJePd32fZ01Qzgm+W0kY+lj9fchDAM+C6I8wa/+3qO4M3cEwWf1b4ea8oW4PVzDETwVenQ4H2mbF3A62q3f/DDzdXr5hj8wbeQ7xO8z5Rt1XnqfYbNqjJf+Zws+MO2+8+0yqHB+0zZXgYDb+pETTVjFAW5LOse8SOD95myvUwUvNm7XsDr969X8LbW6j0VfLOujOD13NMGX34bBXiaL7pdNj+JHDd4bTl9VEJw8NcPLJr5JnhbXyj7bLrcba4Ys2ry4G2jzAievxXB8S7bqjP9gTfdy2ismA5VN3jiueYQ4HU72DN4bhu3ufpLN/BW3Vt84Ls6on7SdIQHP3zEm+cuAL5tB3sFP0YfX99v4ykswGs044/qbS8YaffbOE09KHjKJANhjqGXc9rmHtqeO5vB+03guIKv7HiC4C3LaWj8wXs8NFlxpy/wxt01rdet6gc84VxzEuA9HpOuuGMLXt2NiMBb9r0hwRvbvulGvLofxhtMBwbfx+yS00zR0ODH6uP14M3zVaZa6RbR5lX6mF2aBnhb0+8E9f4/7X4MDN58ndwMnnSu2RN4Y2GUu14swcucNDlPT2HOSaP64wB+vyNRRbzVdXJH8A5XAesib/CNDBUyJw37y/Cbc9KoDrmA3+2K+Z0ARvAWL1migjdNK9LONacAvpmhQuakYWH+9/OOnDSFZX0kYzGkZNGmiekqzylfjrFE7Tb0a3aWREzM05qWx2pvdtaRoULmpOHpKc47ctKoR+LQEe9wzx054tunFYnnmn1FvOkMwjPidRkqZE4aHtzn5pw0qkNO4Mt9Mb/ibX7gtSpL8OI7d/CaDBUyJw1fUPt4XU4a1aE+wLeM14YH3zatSJ1kCAK+LvIDr8tQIXLSSPDmnDSqR27gi72JDrx+WtF4vSwIeNMtH57gdRkqqDlpFI/2Ds4XvMWpprkgvWho8Nam3ZHowGtUNuB1s0tjgFcKnRd4uTvvTdzHAa+ZXQJ4zY4kAN5mcslYUMtVp2TBt87BArxelgE8SdVdT/oNGAcgUwbv9Xx86ZIzeLE/UYKvTjLYDDz7BL8vuG/wfs/Hly6FBO92U8XcwOu6rjGfjy988gdvuMzqBF43GAL4RsR73Ho1W/DqJINVP9QxiowEvPetV57gudoevH22CcLZj34LfYNv4T48eFvT7srMwVuOPwCeYhK88U4qp3Nyf/D7c805gi9TDpIfl9XuysDgSf11VpcAfMWKhIPkEzrtrswTvNvIs8O5WMCXT9J8Rz2h0+6LB3im7gLvNkLvD7zJucmCL5+k+em+c8RfZkrNDAGeBjGrSwC+aiuecLByhzXAK5voG3w05/G2ptsVb/Bm7m7NNsDPDTwVYuagaW7BduTZeVS6XZ3rH/zaI1FB6dRcwbuccgwGvnsywwj++uHZ5sAmf7wuU4qSQ4WajkXNs/K+PQnLbp16xhZCOVk9yYuLb53O2eek0aa+CZCYx5yThp3OyZ9ZR3zm7Func/a3ROlDvuMu294j/ubpGfvZfjwe+MusG7wbxMxB09hCp3PNgWdXQVryZvAOVwG7+njGfLNYLHOq6XYE4MOANwa8L3hb0+1I7OAzV99mDN464aBuR8KDd4reYcA3zx46C9JhHBq8V8LB0qshwVtAnDr4zKzwjHifhIOlV5GC34mcwVufchCbIw3HocFbm243Zg3eZvzRK/jMLEgEvBPErFqDgcA3xh/W14xHAe//QIU/eAJ3J4iTBp+Z1/ce3Pk/UBEv+EIUIfgmyaHB9/BABcCHAJ+ZV+8p4r0eqBgGvBPEYcDXxx+W04rjgO/hgQpf8BW9Ya1KdViAt9TUNjAS+My8dg/gbU23DwBvD77OEuBb14oXfK1L6QF8vdAQM3d+yYiEV9GCF6JIwddgDg3eN/2Y8GoQ8E4QJwq+WWbvN2JIc084KJwCeBfwVZjGV6cGAY+IN+oDgq/QHBr8dPp4vu/7FQcCbzPJYO1cG3hdiYGa+jmDt+dR2UBI8CpOa/BZDw9UrEe9Hp8weIWnOT9LCPCbxeKOenFO5KS5fXFy8vgNKScNwF/2Cl5fXt/g2cjuztlKfWBS5qS5YpwvnpFy0swcvMPA0wt8S3k9g5dX5Srgi5w0zF4/I+WkyfPMKSONvT6zz8SSOabL2W+AJs/c0sRQ8/Lo0thYF1eJeH7L3fGq+og0z0mT89Cn5aTxj3j6IHh2Eb8P5WEjXtiq2seLnDSyUyflpIkavJOmoh8YfFtxYUb1N6f7Ub3MSXP7gsc4KScNwF/WWpYQ4Jvkd+BbM2d2g6+YyElzIbJQkXLSVC0oeIe6jR58SdQWfNZdjiV425w0tcJs9tlSEzH4SjmWBWUK+PbSBgBvto69AHjrggC+y+YP3lAYwFtqAB7gIwUvmXaBr5MH+A6NJ3j6TFEP4I0HWdbgDvA9ayoG8ABvLAfg7S118IJpJ/gqeYAPoKlYnOAzSjkAb6mp2IDgO04gAD60pmIAD/DGcsKDV8kDfAhNxYYAz5Fagc9I5QC8paZiVPAqNYCnGcADvNEAHuDp5QwE/hLg7S0oxOmA774OmAF82uDLNQG+Z41qAA/w1HLmCb4jfY99wh8LjUvSI69ESRYiNWWRdUGEpEfFapUURT7JiKyt46BExDsVRHk9Opr64BrVYgJfkgf4QBrVAB7gA2qswO9WBPieNaoBPMAH1AR5rRrA22pUA3iAD6gBeKN5QgR4gA8rCgb+0uoV3gDvoYkQPPlhQID30AxVUIgXKQK8hwbgAT6oBuBNNmfwJO4AD/CEcgDeQwPwAB9UA/AmmzF4ogbgEwVv9TpugPfQADzAR6EB+JDl+IqCgqdXgiV4kYwo5xkKcmIyIgf/3TQAHxC8TEaUX5188TInJiNy8N9NA/ABwctkRLff82wkxGREg5ln0qM5mENCptI6+3iZjEiApyUjcjhw3TSI+JB9fJGMSIn4rmREDv67aQA+bB//w0UBnpiMyMF/Nw3ABx7V8xG8CPK4khEBfOim3vRtP/67aQA+KHiz9eO/mwbgAR7guzUA76EBeICPQgPwIcvxFQE8zQCergH4kOX4igCeZgBP1wB8yHJ8RQBPM4CnawA+ZDm+opAai3e3A7yHBuABPg4NwAcsx1cE8DQDeAsNwAcsx1cE8DQDeAsNwAcsx1cE8DQDeAsNwAcsx1cUFDxd0y/4jrQp0eWkcSnHVxRSY5H7pl/wPR24ThpE/IgR35P/ThqAB3iA79YAvIcmOvAWGoD30MQC0UUD8B6aWCC6aADeQxMLRBcNwHtoYoHoogF4D00sEF00AO+hiQWiiwbgPTSxQHTRALyHJhaILhqA99DEAtFFA/AemlggumgA3kMTC0QXDcB7aGKB6KIBeA9NLBBdNADvoYkFoosG4D00sUB00QC8hyYWiC6a+YAfQRO1cwAfThO1cwAfThO1cwAfThO1cwAfThO1c4OC7+mBkKloonYumSdpRtBE7Rya+nCaqJ0D+HCaqJ0D+HCaqJ0D+HCaqJ0D+HCaqJ0D+HCaqJ0D+HCaqJ0D+HCaqJ0D+HCaqJ0bFHyHuaQZj1kTtXN2GoCPsiCAj0sTtXMAH04TtXMxgYdFawCfqAF8ogbwiRrAJ2qhwL8+Z/9OTp7k+cXJb3+01Ny+ODk5J2uYhK9uVc5Oc/KMphHOySLsdqhY+9c/vbTU8Ep4/IaqKauMXE4g8FfMiytO/dnV4zdXNP/3mtfiN1XD7PY/39iVU2iekCtKOPf4ze7HTsMWv7Aux6oSiiojlxMI/Iev/858+YZHLzsaaZVb1eQXlJAXGmb//aNlOVKTkyNEiD58zWnYFSQ1t9/f/tW2HG6vKeBlxYkqI5cTCDyrmCvWjj7hnjPfSc6oGt5ufUMALzW5aCfsypEa3qiSupRCdMXbXsuCrmR7TQNS1RQ+kjRllY0LXvag/HC9OqcGiKoR/ycQKXpqEbx25ZQBTyundO5J/uGPLy13SGioQKqaCwr33Q7JXRkXfC7oyTikd4mKhvW9/0obQPGj5Nc/s+3blVNozongpUgityuoPEzIQHaa2xfUcWdRcaLKYgDPj8Vzm0GwqqGOtrnmw7/wJbtySs0JKaqkiDenzywLKjRW4KXmYhfJFE1ZZaODh0VuAJ+oAXyiBvCJGsAnagAvbHu0YHZcLtx9zj7bsIWDsR0LZgAvbPsxQ3394Fgu5Ot7r/INo39zuhzbs1AG8MIk7+39V8XCx89vTo/lJyN7FsoAXpjkff3wbBfxcmG+BvDCJOabp2eyj2ct/XxjXRrAC6tE/ObOmfyEHQV8cZYG8MIk+E3Rwq/FuI738exQGNu1QAbwwqqj+ptTdhon4n6DiJ+37c/j5aj+aCk/uzvbER7AJ2oAn6gBfKIG8IkawCdqAJ+oAXyiBvCJGsAnagCfqAF8ogbwiRrAJ2oAn6gBfKIG8IkawCdqaYHPGua4ocOG9ernAJYY+HdVcwf/edUAPm6rgc/e9QT+8HOAj9qyGveewLP/AXzUltW49wOe/wfgo7asxr0X8GIZ4Ac3cUv8veaDbtuP+LMQ/CGJvWU17u3gb07FTfXbT9ny6jhfi7vuy/9VwMvFw25NXDYD8Azw9YO259jbwBdLbeCFbHP3eYGNP0HJn6jUgC+WDrs1cdlswG94tK34OyxWPOqOluxzFoL/cHScs0+Xufg+q3Hn4LefHPEGQ0iLZcZPHEjrZQlRtB66iC8XDrs1cdkMwMumfsOaVRZu7BDgzz+tWeB9dMZ/Hx2v+afH/PtdxO8PAPHuAxaYm4MiStky2+hakNosy0errh+I46IBfn8AdGvishmAl5HFH2/kbzBZsZC/98vpkn/O/s+QrziHpXj8MatxF+AZmW/POLXNUi6vFge16BUFreT/vuXFHda4ayK+oYnLZgVeRjz75Eve2u8iXjbee/DqEK8EX0T8pwWkWn+94ZtYHV8/ep7zfyV4dYjXrYnLZgVedtT8z1J8Lvt4PthmXcEOfOWcrgRf9PEleN0IfSlfhCVC+bDGvW1Ur2risumDt7Gsxt3rPL46idOrnwNYcuBrs7aOGzqscQf4uC17V79M47ihw8/rl2l69XMASwx847qs44YOG9dle/VzAEsNPG7EKCwt8LCdAXyiBvCJGsAnagCfqAF8ogbwiRrAJ2oAn6gBfKIG8IkawCdqAJ+oAXyiBvCJGsAnagCfqAF8ogbwiRrAJ2oAn6j9P342iopsdz8AAAAAAElFTkSuQmCC" alt="plot of chunk MDC08SViolinPlots"/> </p>
 
 </body>
 

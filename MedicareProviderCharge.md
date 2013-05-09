@@ -1,7 +1,7 @@
 Medicare Provider Charge
 ========================
 
-Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on `2013-05-08 23:48:11` using `R version 2.15.3 (2013-03-01)`.
+Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on 2013-05-09 15:39:24 using R version 3.0.0 (2013-04-03).
 
 Analyze CMS Medicare Provider Charge public use dataset. The data is documented and can be downloaded at the Medicare Provider Charge Data [website](http://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Medicare-Provider-Charge-Data/index.html).
 
@@ -13,6 +13,7 @@ Analyze CMS Medicare Provider Charge public use dataset. The data is documented 
 
 > For these DRGs, average charges and average Medicare payments are calculated at the individual hospital level. Users will be able to make comparisons between the amount charged by individual hospitals within local markets, and nationwide, for services that might be furnished in connection with a particular inpatient stay.
 
+--------------------------------------------------------------------------------
 
 Load the required libraries.
 
@@ -26,11 +27,27 @@ require(RColorBrewer, quietly = TRUE)
 
 
 
-Get data from public Dropbox file where the data was downloaded to. Read the entire dataset.
+RCurl with https is being tempermental. Copy the dataset to the local folder and `read.table` from there. Read the entire dataset. 
 
 ```r
-url <- getURL("https://dl.dropboxusercontent.com/u/386956/Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv")
-df <- read.csv(textConnection(url), header = TRUE, sep = ",")
+# url <-
+# getURL('https://dl.dropboxusercontent.com/u/386956/Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv')
+# df <- read.csv(textConnection(url), header=TRUE, sep=',')
+df <- read.csv("Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv", header = TRUE, 
+    sep = ",")
+```
+
+Create some new fields.
+
+```r
+df$DRGnum <- as.numeric(substr(df$DRG.Definition, 1, 3))
+df$DRGlab <- substr(df$DRG.Definition, 7, max(nchar(as.character(df$DRG.Definition))))
+df$OHSU <- grepl("^OHSU", df$Provider.Name)
+```
+
+Show the number of rows, the field names, and the first few rows.
+
+```r
 nrow(df)
 ```
 
@@ -53,7 +70,10 @@ names(df)
 ##  [8] "Hospital.Referral.Region.Description"
 ##  [9] "Total.Discharges"                    
 ## [10] "Average.Covered.Charges"             
-## [11] "Average.Total.Payments"
+## [11] "Average.Total.Payments"              
+## [12] "DRGnum"                              
+## [13] "DRGlab"                              
+## [14] "OHSU"
 ```
 
 ```r
@@ -89,35 +109,43 @@ head(df)
 ## 4                          AL - Dothan              169
 ## 5                          AL - Dothan               33
 ## 6                          AL - Dothan               37
-##   Average.Covered.Charges Average.Total.Payments
-## 1                   32963                   5777
-## 2                   20313                   4895
-## 3                   38820                  10260
-## 4                   27345                   6542
-## 5                   17606                   4596
-## 6                   20689                   4134
+##   Average.Covered.Charges Average.Total.Payments DRGnum
+## 1                   32963                   5777     39
+## 2                   20313                   4895     57
+## 3                   38820                  10260     64
+## 4                   27345                   6542     65
+## 5                   17606                   4596     66
+## 6                   20689                   4134     69
+##                                                      DRGlab  OHSU
+## 1                        EXTRACRANIAL PROCEDURES W/O CC/MCC FALSE
+## 2             DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC FALSE
+## 3      INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W MCC FALSE
+## 4       INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W CC FALSE
+## 5 INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W/O CC/MCC FALSE
+## 6                                        TRANSIENT ISCHEMIA FALSE
 ```
 
-Create a subset of Oregon institutions.
+
+Create geographic subsets of
+* Oregon providers
+* Portland metro providers
+* OHSU
 
 ```r
 dfOR <- subset(df, Provider.State == "OR")
-```
-
-Create a subset for OHSU.
-
-```r
+dfPDXMetro <- df[grep("^OR - Portland", df$Hospital.Referral.Region.Description), 
+    ]
 dfOHSU <- df[grep("^OHSU", df$Provider.Name), ]
 ```
 
-Not all DRGs are in the dataset. List the DRGs that are reported for OHSU.
+Not all DRGs are in the dataset. List the DRGs that are reported for OHSU. DRGs with a *1* to the right are those reported for OHSU
 
 ```r
 print(xtable(table(dfOHSU$DRG.Definition)), type = "html")
 ```
 
-<!-- html table generated in R 2.15.3 by xtable 1.7-0 package -->
-<!-- Wed May  8 23:49:50 2013 -->
+<!-- html table generated in R 3.0.0 by xtable 1.7-1 package -->
+<!-- Thu May 09 15:39:30 2013 -->
 <TABLE border=1>
 <TR> <TH>  </TH> <TH> V1 </TH>  </TR>
   <TR> <TD align="right"> 039 - EXTRACRANIAL PROCEDURES W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
@@ -222,43 +250,32 @@ print(xtable(table(dfOHSU$DRG.Definition)), type = "html")
   <TR> <TD align="right"> 948 - SIGNS &amp  SYMPTOMS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
    </TABLE>
 
-Single out DRG 470 - MAJOR JOINT REPLACEMENT OR REATTACHMENT OF LOWER EXTREMITY W/O MCC for testing.
+
+
+Create MDC subsets.
 
 ```r
-dfDRG470 <- df[grep("^470", df$DRG.Definition), ]
+dfMDC08S <- subset(df, 453 <= DRGnum & DRGnum <= 517)
 ```
 
-Plot histogram for DRG 470.
+
+
+MDC 08: Diseases and disorders of the musculoskeletal system and connective tissue
+----------------------------------------------------------------------------------
+
+### Surgical DRGs
+
+Violin plots for the surgical DRGs in MDC 08.
 
 ```r
-qplot(dfDRG470$Average.Covered.Charges, main = "DRG 470", xlab = "Average Covered Charges")
+ggplot(dfMDC08S, aes(x = factor(DRGnum), y = Average.Covered.Charges, fill = OHSU, 
+    color = OHSU)) + geom_violin(alpha = 1/2) + scale_y_log10(breaks = c(10000, 
+    20000, 40000, 80000, 160000, 320000), labels = c("$10K", "$20K", "$40K", 
+    "$80K", "$160K", "$320K")) + scale_fill_discrete("Provider", label = c("non-OHSU", 
+    "OHSU")) + scale_color_discrete("Provider", label = c("non-OHSU", "OHSU")) + 
+    labs(title = "MDC 08, Surgical DRGs\nNationwide", x = "DRG", y = "Average Covered Charges") + 
+    theme(legend.position = "bottom")
 ```
 
-```
-## stat_bin: binwidth defaulted to range/30. Use 'binwidth = x' to adjust
-## this.
-```
+![plot of chunk MDC08SViolinPlots](figure/MDC08SViolinPlots.png) 
 
-![plot of chunk DRG470-Plot](figure/DRG470-Plot.png) 
-
-Find data for DRG 470 from OHSU.
-
-```r
-print(xtable(dfOHSU[grep("^470", dfOHSU$DRG.Definition), ]), type = "html")
-```
-
-<!-- html table generated in R 2.15.3 by xtable 1.7-0 package -->
-<!-- Wed May  8 23:49:55 2013 -->
-<TABLE border=1>
-<TR> <TH>  </TH> <TH> DRG.Definition </TH> <TH> Provider.Id </TH> <TH> Provider.Name </TH> <TH> Provider.Street.Address </TH> <TH> Provider.City </TH> <TH> Provider.State </TH> <TH> Provider.Zip.Code </TH> <TH> Hospital.Referral.Region.Description </TH> <TH> Total.Discharges </TH> <TH> Average.Covered.Charges </TH> <TH> Average.Total.Payments </TH>  </TR>
-  <TR> <TD align="right"> 121470 </TD> <TD> 470 - MAJOR JOINT REPLACEMENT OR REATTACHMENT OF LOWER EXTREMITY W/O MCC </TD> <TD align="right"> 380009 </TD> <TD> OHSU HOSPITAL AND CLINICS </TD> <TD> 3181 SW SAM JACKSON PARK ROAD </TD> <TD> PORTLAND </TD> <TD> OR </TD> <TD align="right"> 97223 </TD> <TD> OR - Portland </TD> <TD align="right"> 124 </TD> <TD align="right"> 40783.97 </TD> <TD align="right"> 20098.85 </TD> </TR>
-   </TABLE>
-
-Find OHSU's percentile for DRG 470.
-
-```r
-x <- dfOHSU[grep("^470", dfOHSU$DRG.Definition), "Average.Covered.Charges"]
-p <- sum(dfDRG470$Average.Covered.Charge <= x)/nrow(dfDRG470)
-```
-
-For DRG 470, OHSU is at the `38.4` percentile.

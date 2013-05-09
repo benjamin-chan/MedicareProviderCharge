@@ -13,6 +13,7 @@ Analyze CMS Medicare Provider Charge public use dataset. The data is documented 
 
 > For these DRGs, average charges and average Medicare payments are calculated at the individual hospital level. Users will be able to make comparisons between the amount charged by individual hospitals within local markets, and nationwide, for services that might be furnished in connection with a particular inpatient stay.
 
+--------------------------------------------------------------------------------
 
 Load the required libraries.
 ```{r LoadLibraries, results='hide'}
@@ -24,41 +25,58 @@ require(RColorBrewer, quietly=TRUE)
 ```
 
 
-Get data from public Dropbox file where the data was downloaded to. Read the entire dataset.
+RCurl with https is being tempermental. Copy the dataset to the local folder and `read.table` from there. Read the entire dataset. 
 ```{r ReadData}
-url <- getURL("https://dl.dropboxusercontent.com/u/386956/Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv")
-df <- read.csv(textConnection(url), header=TRUE, sep=",")
+# url <- getURL("https://dl.dropboxusercontent.com/u/386956/Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv")
+# df <- read.csv(textConnection(url), header=TRUE, sep=",")
+df <- read.csv("Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv", header=TRUE, sep=",")
+```
+Create some new fields.
+```{r MassageData}
+df$DRGnum <- as.numeric(substr(df$DRG.Definition, 1, 3))
+df$DRGlab <- substr(df$DRG.Definition, 7, max(nchar(as.character(df$DRG.Definition))))
+df$OHSU <- grepl("^OHSU", df$Provider.Name)
+```
+Show the number of rows, the field names, and the first few rows.
+```{r PeekAtDataset}
 nrow(df)
 names(df)
 head(df)
 ```
-Create a subset of Oregon institutions.
-```{r SubsetOregon}
+
+Create geographic subsets of
+* Oregon providers
+* Portland metro providers
+* OHSU
+```{r CreateGeographicSubsets}
 dfOR <- subset(df, Provider.State=="OR")
-```
-Create a subset for OHSU.
-```{r SubsetOHSU}
+dfPDXMetro <- df[grep("^OR - Portland", df$Hospital.Referral.Region.Description),]
 dfOHSU <- df[grep("^OHSU", df$Provider.Name),]
 ```
-Not all DRGs are in the dataset. List the DRGs that are reported for OHSU.
+Not all DRGs are in the dataset. List the DRGs that are reported for OHSU. DRGs with a *1* to the right are those reported for OHSU
 ```{r ListDRGs, results='asis'}
 print(xtable(table(dfOHSU$DRG.Definition)), type="html")
 ```
-Single out DRG 470 - MAJOR JOINT REPLACEMENT OR REATTACHMENT OF LOWER EXTREMITY W/O MCC for testing.
-```{r SubsetDRG470}
-dfDRG470 <- df[grep("^470", df$DRG.Definition),]
+
+
+Create MDC subsets.
+```{r CreateMDCSubsets}
+dfMDC08S <- subset(df, 453 <= DRGnum & DRGnum <= 517)
 ```
-Plot histogram for DRG 470.
-```{r DRG470-Plot}
-qplot(dfDRG470$Average.Covered.Charges, main="DRG 470", xlab="Average Covered Charges")
+
+
+MDC 08: Diseases and disorders of the musculoskeletal system and connective tissue
+----------------------------------------------------------------------------------
+
+### Surgical DRGs
+
+Violin plots for the surgical DRGs in MDC 08.
+```{r MDC08SViolinPlots}
+ggplot(dfMDC08S, aes(x=factor(DRGnum), y=Average.Covered.Charges, fill=OHSU, color=OHSU)) +
+  geom_violin(alpha=1/2) +
+  scale_y_log10(breaks=c(1E4, 2E4, 4E4, 8E4, 16E4, 32E4), labels=c("$10K", "$20K", "$40K", "$80K", "$160K", "$320K")) +
+  scale_fill_discrete("Provider", label=c("non-OHSU", "OHSU")) +
+  scale_color_discrete("Provider", label=c("non-OHSU", "OHSU")) +
+  labs(title="MDC 08, Surgical DRGs\nNationwide", x="DRG", y="Average Covered Charges") +
+  theme(legend.position="bottom")
 ```
-Find data for DRG 470 from OHSU.
-```{r OHSU-DRG470, results='asis'}
-print(xtable(dfOHSU[grep("^470", dfOHSU$DRG.Definition),]), type="html")
-```
-Find OHSU's percentile for DRG 470.
-```{r OHSU-DRG470-percentile}
-x <- dfOHSU[grep("^470", dfOHSU$DRG.Definition), "Average.Covered.Charges"]
-p <- sum(dfDRG470$Average.Covered.Charge <= x) / nrow(dfDRG470)
-```
-For DRG 470, OHSU is at the `r format(p * 100, digits=3)` percentile.
