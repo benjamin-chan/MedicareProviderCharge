@@ -1,7 +1,7 @@
 Medicare Provider Charge
 ========================
 
-Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on 2013-05-09 16:34:37 using R version 3.0.0 (2013-04-03).
+Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on 2013-05-10 16:09:36 using R version 3.0.0 (2013-04-03).
 
 Analyze CMS Medicare Provider Charge public use dataset. The data is documented and can be downloaded at the Medicare Provider Charge Data [website](http://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Medicare-Provider-Charge-Data/index.html).
 
@@ -15,6 +15,9 @@ Analyze CMS Medicare Provider Charge public use dataset. The data is documented 
 
 --------------------------------------------------------------------------------
 
+Reading and manipulating the data
+---------------------------------
+
 Load the required libraries.
 
 ```r
@@ -24,7 +27,6 @@ require(ggplot2, quietly = TRUE)
 require(scales, quietly = TRUE)
 require(RColorBrewer, quietly = TRUE)
 ```
-
 
 
 RCurl with https is being tempermental. Copy the dataset to the local folder and `read.table` from there. Read the entire dataset. 
@@ -37,6 +39,7 @@ df <- read.csv("Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv", header = 
     sep = ",")
 ```
 
+
 Create some new fields.
 
 ```r
@@ -44,6 +47,7 @@ df$DRGnum <- as.numeric(substr(df$DRG.Definition, 1, 3))
 df$DRGlab <- substr(df$DRG.Definition, 7, max(nchar(as.character(df$DRG.Definition))))
 df$OHSU <- grepl("^OHSU", df$Provider.Name)
 ```
+
 
 Show the number of rows, the field names, and the first few rows.
 
@@ -138,142 +142,62 @@ dfPDXMetro <- df[grep("^OR - Portland", df$Hospital.Referral.Region.Description)
 dfOHSU <- df[grep("^OHSU", df$Provider.Name), ]
 ```
 
-Not all DRGs are in the dataset. List the DRGs that are reported for OHSU. DRGs with a *1* to the right are those reported for OHSU
-
-```r
-print(xtable(table(dfOHSU$DRG.Definition)), type = "html")
-```
-
-<!-- html table generated in R 3.0.0 by xtable 1.7-1 package -->
-<!-- Thu May 09 16:34:43 2013 -->
-<TABLE border=1>
-<TR> <TH>  </TH> <TH> V1 </TH>  </TR>
-  <TR> <TD align="right"> 039 - EXTRACRANIAL PROCEDURES W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 057 - DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 064 - INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 065 - INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 066 - INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 069 - TRANSIENT ISCHEMIA </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 074 - CRANIAL &amp  PERIPHERAL NERVE DISORDERS W/O MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 101 - SEIZURES W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 149 - DYSEQUILIBRIUM </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 176 - PULMONARY EMBOLISM W/O MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 177 - RESPIRATORY INFECTIONS &amp  INFLAMMATIONS W MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 178 - RESPIRATORY INFECTIONS &amp  INFLAMMATIONS W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 189 - PULMONARY EDEMA &amp  RESPIRATORY FAILURE </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 190 - CHRONIC OBSTRUCTIVE PULMONARY DISEASE W MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 191 - CHRONIC OBSTRUCTIVE PULMONARY DISEASE W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 192 - CHRONIC OBSTRUCTIVE PULMONARY DISEASE W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 193 - SIMPLE PNEUMONIA &amp  PLEURISY W MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 194 - SIMPLE PNEUMONIA &amp  PLEURISY W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 195 - SIMPLE PNEUMONIA &amp  PLEURISY W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 202 - BRONCHITIS &amp  ASTHMA W CC/MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 203 - BRONCHITIS &amp  ASTHMA W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 207 - RESPIRATORY SYSTEM DIAGNOSIS W VENTILATOR SUPPORT 96+ HOURS </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 208 - RESPIRATORY SYSTEM DIAGNOSIS W VENTILATOR SUPPORT &lt 96 HOURS </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 238 - MAJOR CARDIOVASC PROCEDURES W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 243 - PERMANENT CARDIAC PACEMAKER IMPLANT W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 244 - PERMANENT CARDIAC PACEMAKER IMPLANT W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 246 - PERC CARDIOVASC PROC W DRUG-ELUTING STENT W MCC OR 4+ VESSELS/STENTS </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 247 - PERC CARDIOVASC PROC W DRUG-ELUTING STENT W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 249 - PERC CARDIOVASC PROC W NON-DRUG-ELUTING STENT W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 251 - PERC CARDIOVASC PROC W/O CORONARY ARTERY STENT W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 252 - OTHER VASCULAR PROCEDURES W MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 253 - OTHER VASCULAR PROCEDURES W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 254 - OTHER VASCULAR PROCEDURES W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 280 - ACUTE MYOCARDIAL INFARCTION, DISCHARGED ALIVE W MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 281 - ACUTE MYOCARDIAL INFARCTION, DISCHARGED ALIVE W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 282 - ACUTE MYOCARDIAL INFARCTION, DISCHARGED ALIVE W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 286 - CIRCULATORY DISORDERS EXCEPT AMI, W CARD CATH W MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 287 - CIRCULATORY DISORDERS EXCEPT AMI, W CARD CATH W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 291 - HEART FAILURE &amp  SHOCK W MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 292 - HEART FAILURE &amp  SHOCK W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 293 - HEART FAILURE &amp  SHOCK W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 300 - PERIPHERAL VASCULAR DISORDERS W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 301 - PERIPHERAL VASCULAR DISORDERS W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 303 - ATHEROSCLEROSIS W/O MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 305 - HYPERTENSION W/O MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 308 - CARDIAC ARRHYTHMIA &amp  CONDUCTION DISORDERS W MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 309 - CARDIAC ARRHYTHMIA &amp  CONDUCTION DISORDERS W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 310 - CARDIAC ARRHYTHMIA &amp  CONDUCTION DISORDERS W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 312 - SYNCOPE &amp  COLLAPSE </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 313 - CHEST PAIN </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 314 - OTHER CIRCULATORY SYSTEM DIAGNOSES W MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 315 - OTHER CIRCULATORY SYSTEM DIAGNOSES W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 329 - MAJOR SMALL &amp  LARGE BOWEL PROCEDURES W MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 330 - MAJOR SMALL &amp  LARGE BOWEL PROCEDURES W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 372 - MAJOR GASTROINTESTINAL DISORDERS &amp  PERITONEAL INFECTIONS W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 377 - G.I. HEMORRHAGE W MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 378 - G.I. HEMORRHAGE W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 379 - G.I. HEMORRHAGE W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 389 - G.I. OBSTRUCTION W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 390 - G.I. OBSTRUCTION W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 391 - ESOPHAGITIS, GASTROENT &amp  MISC DIGEST DISORDERS W MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 392 - ESOPHAGITIS, GASTROENT &amp  MISC DIGEST DISORDERS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 394 - OTHER DIGESTIVE SYSTEM DIAGNOSES W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 418 - LAPAROSCOPIC CHOLECYSTECTOMY W/O C.D.E. W CC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 419 - LAPAROSCOPIC CHOLECYSTECTOMY W/O C.D.E. W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 439 - DISORDERS OF PANCREAS EXCEPT MALIGNANCY W CC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 460 - SPINAL FUSION EXCEPT CERVICAL W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 469 - MAJOR JOINT REPLACEMENT OR REATTACHMENT OF LOWER EXTREMITY W MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 470 - MAJOR JOINT REPLACEMENT OR REATTACHMENT OF LOWER EXTREMITY W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 473 - CERVICAL SPINAL FUSION W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 480 - HIP &amp  FEMUR PROCEDURES EXCEPT MAJOR JOINT W MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 481 - HIP &amp  FEMUR PROCEDURES EXCEPT MAJOR JOINT W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 482 - HIP &amp  FEMUR PROCEDURES EXCEPT MAJOR JOINT W/O CC/MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 491 - BACK &amp  NECK PROC EXC SPINAL FUSION W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 536 - FRACTURES OF HIP &amp  PELVIS W/O MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 552 - MEDICAL BACK PROBLEMS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 563 - FX, SPRN, STRN &amp  DISL EXCEPT FEMUR, HIP, PELVIS &amp  THIGH W/O MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 602 - CELLULITIS W MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 603 - CELLULITIS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 638 - DIABETES W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 640 - MISC DISORDERS OF NUTRITION,METABOLISM,FLUIDS/ELECTROLYTES W MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 641 - MISC DISORDERS OF NUTRITION,METABOLISM,FLUIDS/ELECTROLYTES W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 682 - RENAL FAILURE W MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 683 - RENAL FAILURE W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 684 - RENAL FAILURE W/O CC/MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 689 - KIDNEY &amp  URINARY TRACT INFECTIONS W MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 690 - KIDNEY &amp  URINARY TRACT INFECTIONS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 698 - OTHER KIDNEY &amp  URINARY TRACT DIAGNOSES W MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 699 - OTHER KIDNEY &amp  URINARY TRACT DIAGNOSES W CC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 811 - RED BLOOD CELL DISORDERS W MCC </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 812 - RED BLOOD CELL DISORDERS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 853 - INFECTIOUS &amp  PARASITIC DISEASES W O.R. PROCEDURE W MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 870 - SEPTICEMIA OR SEVERE SEPSIS W MV 96+ HOURS </TD> <TD align="right">   0 </TD> </TR>
-  <TR> <TD align="right"> 871 - SEPTICEMIA OR SEVERE SEPSIS W/O MV 96+ HOURS W MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 872 - SEPTICEMIA OR SEVERE SEPSIS W/O MV 96+ HOURS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 885 - PSYCHOSES </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 897 - ALCOHOL/DRUG ABUSE OR DEPENDENCE W/O REHABILITATION THERAPY W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 917 - POISONING &amp  TOXIC EFFECTS OF DRUGS W MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 918 - POISONING &amp  TOXIC EFFECTS OF DRUGS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-  <TR> <TD align="right"> 948 - SIGNS &amp  SYMPTOMS W/O MCC </TD> <TD align="right">   1 </TD> </TR>
-   </TABLE>
-
-
 
 Create MDC subsets.
 
 ```r
 dfMDC01S <- subset(df, 20 <= DRGnum & DRGnum <= 42)
+dfMDC01M <- subset(df, 52 <= DRGnum & DRGnum <= 103)
 dfMDC02S <- subset(df, 113 <= DRGnum & DRGnum <= 117)
+dfMDC02M <- subset(df, 121 <= DRGnum & DRGnum <= 125)
 dfMDC03S <- subset(df, 129 <= DRGnum & DRGnum <= 139)
+dfMDC03M <- subset(df, 146 <= DRGnum & DRGnum <= 159)
 dfMDC04S <- subset(df, 163 <= DRGnum & DRGnum <= 168)
+dfMDC04M <- subset(df, 175 <= DRGnum & DRGnum <= 206)
 dfMDC05S <- subset(df, 215 <= DRGnum & DRGnum <= 265)
+dfMDC05M <- subset(df, 280 <= DRGnum & DRGnum <= 316)
 dfMDC06S <- subset(df, 326 <= DRGnum & DRGnum <= 358)
+dfMDC06M <- subset(df, 368 <= DRGnum & DRGnum <= 395)
 dfMDC07S <- subset(df, 405 <= DRGnum & DRGnum <= 425)
+dfMDC07M <- subset(df, 432 <= DRGnum & DRGnum <= 446)
 dfMDC08S <- subset(df, 453 <= DRGnum & DRGnum <= 517)
+dfMDC08M <- subset(df, 533 <= DRGnum & DRGnum <= 566)
 dfMDC09S <- subset(df, 570 <= DRGnum & DRGnum <= 585)
+dfMDC09M <- subset(df, 592 <= DRGnum & DRGnum <= 607)
 dfMDC10S <- subset(df, 614 <= DRGnum & DRGnum <= 630)
+dfMDC10M <- subset(df, 637 <= DRGnum & DRGnum <= 645)
 dfMDC11S <- subset(df, 652 <= DRGnum & DRGnum <= 675)
+dfMDC11M <- subset(df, 682 <= DRGnum & DRGnum <= 700)
 dfMDC12S <- subset(df, 707 <= DRGnum & DRGnum <= 718)
+dfMDC12M <- subset(df, 722 <= DRGnum & DRGnum <= 730)
 dfMDC13S <- subset(df, 734 <= DRGnum & DRGnum <= 750)
+dfMDC13M <- subset(df, 754 <= DRGnum & DRGnum <= 761)
 dfMDC14S <- subset(df, 765 <= DRGnum & DRGnum <= 770)
+dfMDC14M <- subset(df, 774 <= DRGnum & DRGnum <= 782)
+dfMDC15M <- subset(df, 789 <= DRGnum & DRGnum <= 795)
 dfMDC16S <- subset(df, 799 <= DRGnum & DRGnum <= 804)
+dfMDC16M <- subset(df, 808 <= DRGnum & DRGnum <= 816)
+dfMDC17S <- subset(df, 820 <= DRGnum & DRGnum <= 830)
+dfMDC17M <- subset(df, 834 <= DRGnum & DRGnum <= 849)
+dfMDC18S <- subset(df, 856 <= DRGnum & DRGnum <= 855)
+dfMDC18M <- subset(df, 862 <= DRGnum & DRGnum <= 872)
+dfMDC19S <- subset(df, 876 == DRGnum)
+dfMDC19M <- subset(df, 880 <= DRGnum & DRGnum <= 887)
+dfMDC20M <- subset(df, 894 <= DRGnum & DRGnum <= 897)
 dfMDC21S <- subset(df, 901 <= DRGnum & DRGnum <= 909)
+dfMDC21M <- subset(df, 913 <= DRGnum & DRGnum <= 923)
 dfMDC22S <- subset(df, 927 <= DRGnum & DRGnum <= 934)
+dfMDC22S <- subset(df, 935 == DRGnum)
+dfMDC23S <- subset(df, 939 <= DRGnum & DRGnum <= 941)
+dfMDC23M <- subset(df, 945 <= DRGnum & DRGnum <= 951)
+dfMDC24S <- subset(df, 955 <= DRGnum & DRGnum <= 959)
+dfMDC24M <- subset(df, 963 <= DRGnum & DRGnum <= 965)
+dfMDC25S <- subset(df, 969 <= DRGnum & DRGnum <= 970)
+dfMDC25M <- subset(df, 974 <= DRGnum & DRGnum <= 977)
 ```
 
+According to [findacode.com](http://www.findacode.com/code-set.php?set=DRG&mdc=04), DRGs 207 and 208 (respiratory system with ventilator support) are grouped as medical DRGs under MDC 04 (diseases & disorders of the respiratory system). This doesn't seem right. I'm going to exclude these DRGs until further clarification.
+DRGs 998 (principal diagnosis invalid as discharge diagnosis) and 999 (ungroupable) are also excluded.
 
 Create function for violin plotting.
 
@@ -290,7 +214,9 @@ Violin <- function(d, title) {
 ```
 
 
-Violin plots for surgical DRGs by MDC.
+Surgical DRGs
+-------------
+Violin plots for surgical DRGs by MDC. Code chunks that are not evaluated do not have data.
 
 ```r
 Violin(dfMDC01S, "MDC 01 Diseases & disorders of the nervous system")
@@ -378,11 +304,207 @@ Violin(dfMDC16S, "MDC 16 Disease & disorders of blood, blood forming organs, imm
 
 
 ```r
+Violin(dfMDC17S, "MDC 17 Myeloproliferative diseases & disorders, poorly differentiated neoplasm")
+```
+
+
+```r
+Violin(dfMDC18S, "MDC 18 Infectious & parasitic diseases, systemic or unspecified sites")
+```
+
+
+```r
+Violin(dfMDC19S, "MDC 19 Mental diseases & disorders")
+```
+
+
+```r
+Violin(dfMDC20S, "MDC 20 Alcohol/drug use & alcohol/drug induced organic mental disorders")
+```
+
+
+```r
 Violin(dfMDC21S, "MDC 21 Injuries, poisonings & toxic effects of drugs")
 ```
 
 
 ```r
 Violin(dfMDC22S, "MDC 22 Burns")
+```
+
+
+```r
+Violin(dfMDC23S, "MDC 23 Factors influencing hlth stat & othr contacts with hlth servcs")
+```
+
+
+```r
+Violin(dfMDC24S, "MDC 24 Multiple significant trauma")
+```
+
+
+```r
+Violin(dfMDC25S, "MDC 25 Human immunodeficiency virus infections")
+```
+
+
+Medical DRGs
+-------------
+Violin plots for medical DRGs by MDC. Code chunks that are not evaluated do not have data.
+
+```r
+Violin(dfMDC01M, "MDC 01 Diseases & disorders of the nervous system")
+```
+
+![plot of chunk ViolinMDC01M](figure/ViolinMDC01M.png) 
+
+
+```r
+Violin(dfMDC02M, "MDC 02 Diseases & disorders of the eye")
+```
+
+
+```r
+Violin(dfMDC03M, "MDC 03 Diseases & disorders of the ear, nose, mouth & throat")
+```
+
+![plot of chunk ViolinMDC03M](figure/ViolinMDC03M.png) 
+
+
+```r
+Violin(dfMDC04M, "MDC 04 Diseases & disorders of the respiratory system")
+```
+
+![plot of chunk ViolinMDC04M](figure/ViolinMDC04M.png) 
+
+
+```r
+Violin(dfMDC05M, "MDC 05 Diseases & disorders of the circulatory system")
+```
+
+![plot of chunk ViolinMDC05M](figure/ViolinMDC05M.png) 
+
+
+```r
+Violin(dfMDC06M, "MDC 06 Diseases & disorders of the digestive system")
+```
+
+![plot of chunk ViolinMDC06M](figure/ViolinMDC06M.png) 
+
+
+```r
+Violin(dfMDC07M, "MDC 07 Diseases & disorders of the hepatobiliary system & pancreas")
+```
+
+![plot of chunk ViolinMDC07M](figure/ViolinMDC07M.png) 
+
+
+```r
+Violin(dfMDC08M, "MDC 08 Diseases & disorders of the musculoskeletal system & connective tissue")
+```
+
+![plot of chunk ViolinMDC08M](figure/ViolinMDC08M.png) 
+
+
+```r
+Violin(dfMDC09M, "MDC 09 Diseases & disorders of the skin, subcutaneous tissue & breast")
+```
+
+![plot of chunk ViolinMDC09M](figure/ViolinMDC09M.png) 
+
+
+```r
+Violin(dfMDC10M, "MDC 10 Endocrine, nutritional & metabolic diseases & disorders")
+```
+
+![plot of chunk ViolinMDC10M](figure/ViolinMDC10M.png) 
+
+
+```r
+Violin(dfMDC11M, "MDC 11 Diseases & disorders of the kidney & urinary tract")
+```
+
+![plot of chunk ViolinMDC11M](figure/ViolinMDC11M.png) 
+
+
+```r
+Violin(dfMDC12M, "MDC 12 Diseases & disorders of the male reproductive system")
+```
+
+
+```r
+Violin(dfMDC13M, "MDC 13 Diseases & disorders of the female reproductive system")
+```
+
+
+```r
+Violin(dfMDC14M, "MDC 14 Pregnancy, childbirth & the puerperium")
+```
+
+
+```r
+Violin(dfMDC15M, "MDC 15 Newborns & other neonates with condtn orig in perinatal period")
+```
+
+
+```r
+Violin(dfMDC16M, "MDC 16 Disease & disorders of blood, blood forming organs, immunologic disorders")
+```
+
+![plot of chunk ViolinMDC16M](figure/ViolinMDC16M.png) 
+
+
+```r
+Violin(dfMDC17M, "MDC 17 Myeloproliferative diseases & disorders, poorly differentiated neoplasm")
+```
+
+
+```r
+Violin(dfMDC18M, "MDC 18 Infectious & parasitic diseases, systemic or unspecified sites")
+```
+
+![plot of chunk ViolinMDC18M](figure/ViolinMDC18M.png) 
+
+
+```r
+Violin(dfMDC19M, "MDC 19 Mental diseases & disorders")
+```
+
+![plot of chunk ViolinMDC19M](figure/ViolinMDC19M.png) 
+
+
+```r
+Violin(dfMDC20M, "MDC 20 Alcohol/drug use & alcohol/drug induced organic mental disorders")
+```
+
+![plot of chunk ViolinMDC20M](figure/ViolinMDC20M.png) 
+
+
+```r
+Violin(dfMDC21M, "MDC 21 Injuries, poisonings & toxic effects of drugs")
+```
+
+![plot of chunk ViolinMDC21M](figure/ViolinMDC21M.png) 
+
+
+```r
+Violin(dfMDC22M, "MDC 22 Burns")
+```
+
+
+```r
+Violin(dfMDC23M, "MDC 23 Factors influencing hlth stat & othr contacts with hlth servcs")
+```
+
+![plot of chunk ViolinMDC23M](figure/ViolinMDC23M.png) 
+
+
+```r
+Violin(dfMDC24M, "MDC 24 Multiple significant trauma")
+```
+
+
+```r
+Violin(dfMDC25M, "MDC 25 Human immunodeficiency virus infections")
 ```
 
