@@ -1,7 +1,7 @@
 Medicare Provider Charge
 ========================
 
-Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on 2013-05-10 16:09:36 using R version 3.0.0 (2013-04-03).
+Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on `2013-05-26 21:27:19` using `R version 2.15.3 (2013-03-01)`.
 
 Analyze CMS Medicare Provider Charge public use dataset. The data is documented and can be downloaded at the Medicare Provider Charge Data [website](http://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Medicare-Provider-Charge-Data/index.html).
 
@@ -40,13 +40,33 @@ df <- read.csv("Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv", header = 
 ```
 
 
-Create some new fields.
+Create some new fields. 
+* `DRGnum` is a numeric vector of the MS-DRG number without the description
+* `DRGlab` is a character vector of the MS-DRG description without the number
+* `OHSU` is a logical vector indicating if the row is from an OHSU provider
 
 ```r
 df$DRGnum <- as.numeric(substr(df$DRG.Definition, 1, 3))
 df$DRGlab <- substr(df$DRG.Definition, 7, max(nchar(as.character(df$DRG.Definition))))
 df$OHSU <- grepl("^OHSU", df$Provider.Name)
 ```
+
+Get vector of MS-DRGs that OHSU has data for.
+
+```r
+drgOHSU <- df$DRGnum[df$OHSU]
+```
+
+
+*TO-DO*
+
+1. Create lookup table for MDC and DRG
+2. Create MDC vector of MDC codes that OHSU has data for
+3. Create working data subset that includes all providers from the MDCs in step 2.
+4. Fix violin plots
+  * Annotate with percentile
+  * Flip coordinates?
+  * Add `DRGlab` to axis tick labels?
 
 
 Show the number of rows, the field names, and the first few rows.
@@ -202,149 +222,153 @@ DRGs 998 (principal diagnosis invalid as discharge diagnosis) and 999 (ungroupab
 Create function for violin plotting.
 
 ```r
-Violin <- function(d, title) {
-    ggplot(d, aes(x = factor(DRGnum), y = Average.Covered.Charges, fill = OHSU, 
-        color = OHSU)) + geom_violin(alpha = 1/2) + scale_y_log10(breaks = c(10000, 
-        20000, 40000, 80000, 160000, 320000), labels = c("$10K", "$20K", "$40K", 
-        "$80K", "$160K", "$320K")) + scale_fill_discrete("Provider", label = c("non-OHSU", 
-        "OHSU")) + scale_color_discrete("Provider", label = c("non-OHSU", "OHSU")) + 
-        labs(title = paste(title, "Nationwide", sep = "\n"), x = "DRG", y = "Average Covered Charges") + 
-        theme(legend.position = "bottom")
+DistnPlot <- function(d, title) {
+    drg <- d$DRGnum[d$OHSU]
+    d.subset <- subset(d, DRGnum %in% drg, select = c(DRGnum, Average.Covered.Charges, 
+        OHSU))
+    ggplot(d.subset, aes(x = as.character(DRGnum), y = Average.Covered.Charges)) + 
+        # geom_boxplot(alpha=1/2, outlier.size=0) +
+    geom_violin(alpha = 1/2, fill = "grey") + geom_point(data = d.subset[d.subset$OHSU, 
+        ]) + scale_y_log10(breaks = c(10000, 20000, 40000, 80000, 160000, 320000), 
+        labels = c("$10", "$20", "$40", "$80", "$160", "$320")) + labs(title = paste(title, 
+        "Nationwide", sep = "\n"), x = "DRG", y = "Average Covered Charges ($1,000s)") + 
+        theme_bw() + theme(legend.position = "bottom", panel.grid.major.x = NULL, 
+        panel.grid.major.y = element_line(color = "grey"), panel.grid.minor.y = NULL)
 }
 ```
 
 
 Surgical DRGs
 -------------
-Violin plots for surgical DRGs by MDC. Code chunks that are not evaluated do not have data.
+Violin plots for surgical DRGs by MDC. Code chunks that are not evaluated do not have data. *NEED TO TWEAK THE FUNCTION TO CHECK THIS AND RETURN NULL*
 
 ```r
-Violin(dfMDC01S, "MDC 01 Diseases & disorders of the nervous system")
+DistnPlot(dfMDC01S, "MDC 01 Diseases & disorders of the nervous system")
 ```
 
-![plot of chunk ViolinMDC01S](figure/ViolinMDC01S.png) 
+![plot of chunk DistnPlotMDC01S](figure/DistnPlotMDC01S.png) 
 
 
 ```r
-Violin(dfMDC02S, "MDC 02 Diseases & disorders of the eye")
-```
-
-
-```r
-Violin(dfMDC03S, "MDC 03 Diseases & disorders of the ear, nose, mouth & throat")
+DistnPlot(dfMDC02S, "MDC 02 Diseases & disorders of the eye")
 ```
 
 
 ```r
-Violin(dfMDC04S, "MDC 04 Diseases & disorders of the respiratory system")
+DistnPlot(dfMDC03S, "MDC 03 Diseases & disorders of the ear, nose, mouth & throat")
 ```
 
 
 ```r
-Violin(dfMDC05S, "MDC 05 Diseases & disorders of the circulatory system")
-```
-
-![plot of chunk ViolinMDC05S](figure/ViolinMDC05S.png) 
-
-
-```r
-Violin(dfMDC06S, "MDC 06 Diseases & disorders of the digestive system")
-```
-
-![plot of chunk ViolinMDC06S](figure/ViolinMDC06S.png) 
-
-
-```r
-Violin(dfMDC07S, "MDC 07 Diseases & disorders of the hepatobiliary system & pancreas")
-```
-
-![plot of chunk ViolinMDC07S](figure/ViolinMDC07S.png) 
-
-
-```r
-Violin(dfMDC08S, "MDC 08 Diseases & disorders of the musculoskeletal system & connective tissue")
-```
-
-![plot of chunk ViolinMDC08S](figure/ViolinMDC08S.png) 
-
-
-```r
-Violin(dfMDC09S, "MDC 09 Diseases & disorders of the skin, subcutaneous tissue & breast")
+DistnPlot(dfMDC04S, "MDC 04 Diseases & disorders of the respiratory system")
 ```
 
 
 ```r
-Violin(dfMDC10S, "MDC 10 Endocrine, nutritional & metabolic diseases & disorders")
+DistnPlot(dfMDC05S, "MDC 05 Diseases & disorders of the circulatory system")
+```
+
+![plot of chunk DistnPlotMDC05S](figure/DistnPlotMDC05S.png) 
+
+
+```r
+DistnPlot(dfMDC06S, "MDC 06 Diseases & disorders of the digestive system")
+```
+
+![plot of chunk DistnPlotMDC06S](figure/DistnPlotMDC06S.png) 
+
+
+```r
+DistnPlot(dfMDC07S, "MDC 07 Diseases & disorders of the hepatobiliary system & pancreas")
+```
+
+![plot of chunk DistnPlotMDC07S](figure/DistnPlotMDC07S.png) 
+
+
+```r
+DistnPlot(dfMDC08S, "MDC 08 Diseases & disorders of the musculoskeletal system & connective tissue")
+```
+
+![plot of chunk DistnPlotMDC08S](figure/DistnPlotMDC08S.png) 
+
+
+```r
+DistnPlot(dfMDC09S, "MDC 09 Diseases & disorders of the skin, subcutaneous tissue & breast")
 ```
 
 
 ```r
-Violin(dfMDC11S, "MDC 11 Diseases & disorders of the kidney & urinary tract")
+DistnPlot(dfMDC10S, "MDC 10 Endocrine, nutritional & metabolic diseases & disorders")
 ```
 
 
 ```r
-Violin(dfMDC12S, "MDC 12 Diseases & disorders of the male reproductive system")
+DistnPlot(dfMDC11S, "MDC 11 Diseases & disorders of the kidney & urinary tract")
 ```
 
 
 ```r
-Violin(dfMDC13S, "MDC 13 Diseases & disorders of the female reproductive system")
+DistnPlot(dfMDC12S, "MDC 12 Diseases & disorders of the male reproductive system")
 ```
 
 
 ```r
-Violin(dfMDC14S, "MDC 14 Pregnancy, childbirth & the puerperium")
+DistnPlot(dfMDC13S, "MDC 13 Diseases & disorders of the female reproductive system")
 ```
 
 
 ```r
-Violin(dfMDC16S, "MDC 16 Disease & disorders of blood, blood forming organs, immunologic disorders")
+DistnPlot(dfMDC14S, "MDC 14 Pregnancy, childbirth & the puerperium")
 ```
 
 
 ```r
-Violin(dfMDC17S, "MDC 17 Myeloproliferative diseases & disorders, poorly differentiated neoplasm")
+DistnPlot(dfMDC16S, "MDC 16 Disease & disorders of blood, blood forming organs, immunologic disorders")
 ```
 
 
 ```r
-Violin(dfMDC18S, "MDC 18 Infectious & parasitic diseases, systemic or unspecified sites")
+DistnPlot(dfMDC17S, "MDC 17 Myeloproliferative diseases & disorders, poorly differentiated neoplasm")
 ```
 
 
 ```r
-Violin(dfMDC19S, "MDC 19 Mental diseases & disorders")
+DistnPlot(dfMDC18S, "MDC 18 Infectious & parasitic diseases, systemic or unspecified sites")
 ```
 
 
 ```r
-Violin(dfMDC20S, "MDC 20 Alcohol/drug use & alcohol/drug induced organic mental disorders")
+DistnPlot(dfMDC19S, "MDC 19 Mental diseases & disorders")
 ```
 
 
 ```r
-Violin(dfMDC21S, "MDC 21 Injuries, poisonings & toxic effects of drugs")
+DistnPlot(dfMDC20S, "MDC 20 Alcohol/drug use & alcohol/drug induced organic mental disorders")
 ```
 
 
 ```r
-Violin(dfMDC22S, "MDC 22 Burns")
+DistnPlot(dfMDC21S, "MDC 21 Injuries, poisonings & toxic effects of drugs")
 ```
 
 
 ```r
-Violin(dfMDC23S, "MDC 23 Factors influencing hlth stat & othr contacts with hlth servcs")
+DistnPlot(dfMDC22S, "MDC 22 Burns")
 ```
 
 
 ```r
-Violin(dfMDC24S, "MDC 24 Multiple significant trauma")
+DistnPlot(dfMDC23S, "MDC 23 Factors influencing hlth stat & othr contacts with hlth servcs")
 ```
 
 
 ```r
-Violin(dfMDC25S, "MDC 25 Human immunodeficiency virus infections")
+DistnPlot(dfMDC24S, "MDC 24 Multiple significant trauma")
+```
+
+
+```r
+DistnPlot(dfMDC25S, "MDC 25 Human immunodeficiency virus infections")
 ```
 
 
@@ -353,158 +377,158 @@ Medical DRGs
 Violin plots for medical DRGs by MDC. Code chunks that are not evaluated do not have data.
 
 ```r
-Violin(dfMDC01M, "MDC 01 Diseases & disorders of the nervous system")
+DistnPlot(dfMDC01M, "MDC 01 Diseases & disorders of the nervous system")
 ```
 
-![plot of chunk ViolinMDC01M](figure/ViolinMDC01M.png) 
+![plot of chunk DistnPlotMDC01M](figure/DistnPlotMDC01M.png) 
 
 
 ```r
-Violin(dfMDC02M, "MDC 02 Diseases & disorders of the eye")
-```
-
-
-```r
-Violin(dfMDC03M, "MDC 03 Diseases & disorders of the ear, nose, mouth & throat")
-```
-
-![plot of chunk ViolinMDC03M](figure/ViolinMDC03M.png) 
-
-
-```r
-Violin(dfMDC04M, "MDC 04 Diseases & disorders of the respiratory system")
-```
-
-![plot of chunk ViolinMDC04M](figure/ViolinMDC04M.png) 
-
-
-```r
-Violin(dfMDC05M, "MDC 05 Diseases & disorders of the circulatory system")
-```
-
-![plot of chunk ViolinMDC05M](figure/ViolinMDC05M.png) 
-
-
-```r
-Violin(dfMDC06M, "MDC 06 Diseases & disorders of the digestive system")
-```
-
-![plot of chunk ViolinMDC06M](figure/ViolinMDC06M.png) 
-
-
-```r
-Violin(dfMDC07M, "MDC 07 Diseases & disorders of the hepatobiliary system & pancreas")
-```
-
-![plot of chunk ViolinMDC07M](figure/ViolinMDC07M.png) 
-
-
-```r
-Violin(dfMDC08M, "MDC 08 Diseases & disorders of the musculoskeletal system & connective tissue")
-```
-
-![plot of chunk ViolinMDC08M](figure/ViolinMDC08M.png) 
-
-
-```r
-Violin(dfMDC09M, "MDC 09 Diseases & disorders of the skin, subcutaneous tissue & breast")
-```
-
-![plot of chunk ViolinMDC09M](figure/ViolinMDC09M.png) 
-
-
-```r
-Violin(dfMDC10M, "MDC 10 Endocrine, nutritional & metabolic diseases & disorders")
-```
-
-![plot of chunk ViolinMDC10M](figure/ViolinMDC10M.png) 
-
-
-```r
-Violin(dfMDC11M, "MDC 11 Diseases & disorders of the kidney & urinary tract")
-```
-
-![plot of chunk ViolinMDC11M](figure/ViolinMDC11M.png) 
-
-
-```r
-Violin(dfMDC12M, "MDC 12 Diseases & disorders of the male reproductive system")
+DistnPlot(dfMDC02M, "MDC 02 Diseases & disorders of the eye")
 ```
 
 
 ```r
-Violin(dfMDC13M, "MDC 13 Diseases & disorders of the female reproductive system")
+DistnPlot(dfMDC03M, "MDC 03 Diseases & disorders of the ear, nose, mouth & throat")
+```
+
+![plot of chunk DistnPlotMDC03M](figure/DistnPlotMDC03M.png) 
+
+
+```r
+DistnPlot(dfMDC04M, "MDC 04 Diseases & disorders of the respiratory system")
+```
+
+![plot of chunk DistnPlotMDC04M](figure/DistnPlotMDC04M.png) 
+
+
+```r
+DistnPlot(dfMDC05M, "MDC 05 Diseases & disorders of the circulatory system")
+```
+
+![plot of chunk DistnPlotMDC05M](figure/DistnPlotMDC05M.png) 
+
+
+```r
+DistnPlot(dfMDC06M, "MDC 06 Diseases & disorders of the digestive system")
+```
+
+![plot of chunk DistnPlotMDC06M](figure/DistnPlotMDC06M.png) 
+
+
+```r
+DistnPlot(dfMDC07M, "MDC 07 Diseases & disorders of the hepatobiliary system & pancreas")
+```
+
+![plot of chunk DistnPlotMDC07M](figure/DistnPlotMDC07M.png) 
+
+
+```r
+DistnPlot(dfMDC08M, "MDC 08 Diseases & disorders of the musculoskeletal system & connective tissue")
+```
+
+![plot of chunk DistnPlotMDC08M](figure/DistnPlotMDC08M.png) 
+
+
+```r
+DistnPlot(dfMDC09M, "MDC 09 Diseases & disorders of the skin, subcutaneous tissue & breast")
+```
+
+![plot of chunk DistnPlotMDC09M](figure/DistnPlotMDC09M.png) 
+
+
+```r
+DistnPlot(dfMDC10M, "MDC 10 Endocrine, nutritional & metabolic diseases & disorders")
+```
+
+![plot of chunk DistnPlotMDC10M](figure/DistnPlotMDC10M.png) 
+
+
+```r
+DistnPlot(dfMDC11M, "MDC 11 Diseases & disorders of the kidney & urinary tract")
+```
+
+![plot of chunk DistnPlotMDC11M](figure/DistnPlotMDC11M.png) 
+
+
+```r
+DistnPlot(dfMDC12M, "MDC 12 Diseases & disorders of the male reproductive system")
 ```
 
 
 ```r
-Violin(dfMDC14M, "MDC 14 Pregnancy, childbirth & the puerperium")
+DistnPlot(dfMDC13M, "MDC 13 Diseases & disorders of the female reproductive system")
 ```
 
 
 ```r
-Violin(dfMDC15M, "MDC 15 Newborns & other neonates with condtn orig in perinatal period")
+DistnPlot(dfMDC14M, "MDC 14 Pregnancy, childbirth & the puerperium")
 ```
 
 
 ```r
-Violin(dfMDC16M, "MDC 16 Disease & disorders of blood, blood forming organs, immunologic disorders")
-```
-
-![plot of chunk ViolinMDC16M](figure/ViolinMDC16M.png) 
-
-
-```r
-Violin(dfMDC17M, "MDC 17 Myeloproliferative diseases & disorders, poorly differentiated neoplasm")
+DistnPlot(dfMDC15M, "MDC 15 Newborns & other neonates with condtn orig in perinatal period")
 ```
 
 
 ```r
-Violin(dfMDC18M, "MDC 18 Infectious & parasitic diseases, systemic or unspecified sites")
+DistnPlot(dfMDC16M, "MDC 16 Disease & disorders of blood, blood forming organs, immunologic disorders")
 ```
 
-![plot of chunk ViolinMDC18M](figure/ViolinMDC18M.png) 
+![plot of chunk DistnPlotMDC16M](figure/DistnPlotMDC16M.png) 
 
 
 ```r
-Violin(dfMDC19M, "MDC 19 Mental diseases & disorders")
-```
-
-![plot of chunk ViolinMDC19M](figure/ViolinMDC19M.png) 
-
-
-```r
-Violin(dfMDC20M, "MDC 20 Alcohol/drug use & alcohol/drug induced organic mental disorders")
-```
-
-![plot of chunk ViolinMDC20M](figure/ViolinMDC20M.png) 
-
-
-```r
-Violin(dfMDC21M, "MDC 21 Injuries, poisonings & toxic effects of drugs")
-```
-
-![plot of chunk ViolinMDC21M](figure/ViolinMDC21M.png) 
-
-
-```r
-Violin(dfMDC22M, "MDC 22 Burns")
+DistnPlot(dfMDC17M, "MDC 17 Myeloproliferative diseases & disorders, poorly differentiated neoplasm")
 ```
 
 
 ```r
-Violin(dfMDC23M, "MDC 23 Factors influencing hlth stat & othr contacts with hlth servcs")
+DistnPlot(dfMDC18M, "MDC 18 Infectious & parasitic diseases, systemic or unspecified sites")
 ```
 
-![plot of chunk ViolinMDC23M](figure/ViolinMDC23M.png) 
+![plot of chunk DistnPlotMDC18M](figure/DistnPlotMDC18M.png) 
 
 
 ```r
-Violin(dfMDC24M, "MDC 24 Multiple significant trauma")
+DistnPlot(dfMDC19M, "MDC 19 Mental diseases & disorders")
+```
+
+![plot of chunk DistnPlotMDC19M](figure/DistnPlotMDC19M.png) 
+
+
+```r
+DistnPlot(dfMDC20M, "MDC 20 Alcohol/drug use & alcohol/drug induced organic mental disorders")
+```
+
+![plot of chunk DistnPlotMDC20M](figure/DistnPlotMDC20M.png) 
+
+
+```r
+DistnPlot(dfMDC21M, "MDC 21 Injuries, poisonings & toxic effects of drugs")
+```
+
+![plot of chunk DistnPlotMDC21M](figure/DistnPlotMDC21M.png) 
+
+
+```r
+DistnPlot(dfMDC22M, "MDC 22 Burns")
 ```
 
 
 ```r
-Violin(dfMDC25M, "MDC 25 Human immunodeficiency virus infections")
+DistnPlot(dfMDC23M, "MDC 23 Factors influencing hlth stat & othr contacts with hlth servcs")
+```
+
+![plot of chunk DistnPlotMDC23M](figure/DistnPlotMDC23M.png) 
+
+
+```r
+DistnPlot(dfMDC24M, "MDC 24 Multiple significant trauma")
+```
+
+
+```r
+DistnPlot(dfMDC25M, "MDC 25 Human immunodeficiency virus infections")
 ```
 
