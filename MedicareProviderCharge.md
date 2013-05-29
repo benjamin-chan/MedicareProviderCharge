@@ -1,7 +1,7 @@
 Medicare Provider Charge
 ========================
 
-Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on `2013-05-26 21:27:19` using `R version 2.15.3 (2013-03-01)`.
+Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on 2013-05-29 16:23:19 using R version 3.0.0 (2013-04-03).
 
 Analyze CMS Medicare Provider Charge public use dataset. The data is documented and can be downloaded at the Medicare Provider Charge Data [website](http://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Medicare-Provider-Charge-Data/index.html).
 
@@ -29,7 +29,7 @@ require(RColorBrewer, quietly = TRUE)
 ```
 
 
-RCurl with https is being tempermental. Copy the dataset to the local folder and `read.table` from there. Read the entire dataset. 
+RCurl with https is being tempermental. Copy the dataset to the local folder and `read.table` from there. Read the entire dataset. Also read a MDC-DRG mapping table. This table comes from [CMS](http://www.cms.gov/Medicare/Medicare-Fee-for-Service-Payment/AcuteInpatientPPS/FY-2013-IPPS-Final-Rule-Home-Page-Items/FY2013-Final-Rule-Tables.html), [Table 5](http://www.cms.gov/Medicare/Medicare-Fee-for-Service-Payment/AcuteInpatientPPS/Downloads/FY_13_FR_Table_5.zip). Finally, create an MDC label table.
 
 ```r
 # url <-
@@ -37,6 +37,25 @@ RCurl with https is being tempermental. Copy the dataset to the local folder and
 # df <- read.csv(textConnection(url), header=TRUE, sep=',')
 df <- read.csv("Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv", header = TRUE, 
     sep = ",")
+drg <- read.table("CMS-1588-F TABLE 5.txt", skip = 2, nrows = 751, sep = "\t", 
+    col.names = c("drg", "postacute", "specialpay", "mdc", "type", "drglab", 
+        "drgwgt", "meanLOSg", "meanLOGa"))
+mdc <- matrix(ncol = 2, byrow = TRUE, data = c("PRE", "Pre-MDC", "01", "Nervous System", 
+    "02", "Eye", "03", "Ear, Nose, Mouth And Throat", "04", "Respiratory System", 
+    "05", "Circulatory System", "06", "Digestive System", "07", "Hepatobiliary System And Pancreas", 
+    "08", "Musculoskeletal System And Connective Tissue", "09", "Skin, Subcutaneous Tissue And Breast", 
+    "10", "Endocrine, Nutritional And Metabolic System", "11", "Kidney And Urinary Tract", 
+    "12", "Male Reproductive System", "13", "Female Reproductive System", "14", 
+    "Pregnancy, Childbirth And Puerperium", "15", "Newborn And Other Neonates (Perinatal Period)", 
+    "16", "Blood and Blood Forming Organs and Immunological Disorders", "17", 
+    "Myeloproliferative DDs (Poorly Differentiated Neoplasms)", "18", "Infectious and Parasitic DDs", 
+    "19", "Mental Diseases and Disorders", "20", "Alcohol/Drug Use or Induced Mental Disorders", 
+    "21", "Injuries, Poison And Toxic Effect of Drugs", "22", "Burns", "23", 
+    "Factors Influencing Health Status", "24", "Multiple Significant Trauma", 
+    "25", "Human Immunodeficiency Virus Infection"), )
+mdc <- data.frame(mdc)
+names(mdc) <- c("mdc", "mdclab")
+drg <- merge(drg, mdc, by = c("mdc"))
 ```
 
 
