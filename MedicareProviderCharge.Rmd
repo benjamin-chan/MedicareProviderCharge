@@ -27,11 +27,14 @@ require(scales, quietly=TRUE)
 require(RColorBrewer, quietly=TRUE)
 ```
 
-RCurl with https is being tempermental. Copy the dataset to the local folder and `read.table` from there. Read the entire dataset. Also read a MDC-DRG mapping table. This table comes from [CMS](http://www.cms.gov/Medicare/Medicare-Fee-for-Service-Payment/AcuteInpatientPPS/FY-2013-IPPS-Final-Rule-Home-Page-Items/FY2013-Final-Rule-Tables.html), [Table 5](http://www.cms.gov/Medicare/Medicare-Fee-for-Service-Payment/AcuteInpatientPPS/Downloads/FY_13_FR_Table_5.zip). Finally, create an MDC label table.
+RCurl with https is being tempermental. Copy the dataset to the local folder and `read.table` from there. Read the entire dataset. 
 ```{r ReadData}
 # url <- getURL("https://dl.dropboxusercontent.com/u/386956/Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv")
 # df <- read.csv(textConnection(url), header=TRUE, sep=",")
 df <- read.csv("Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv", header=TRUE, sep=",")
+```
+Also read a MDC-DRG mapping table. This table comes from [CMS](http://www.cms.gov/Medicare/Medicare-Fee-for-Service-Payment/AcuteInpatientPPS/FY-2013-IPPS-Final-Rule-Home-Page-Items/FY2013-Final-Rule-Tables.html), [Table 5](http://www.cms.gov/Medicare/Medicare-Fee-for-Service-Payment/AcuteInpatientPPS/Downloads/FY_13_FR_Table_5.zip). Finally, create an MDC label table.
+```{r ReadMappingTables}
 drg <- read.table("CMS-1588-F TABLE 5.txt", skip=2, nrows=751, sep="\t", col.names=c("drg", "postacute", "specialpay", "mdc", "type", "drglab", "drgwgt", "meanLOSg", "meanLOGa"))
 mdc <- matrix(
   ncol=2,
@@ -74,19 +77,29 @@ Create some new fields.
 * `DRGnum` is a numeric vector of the MS-DRG number without the description
 * `DRGlab` is a character vector of the MS-DRG description without the number
 * `OHSU` is a logical vector indicating if the row is from an OHSU provider
-```{r MassageData}
+```{r CreateVariables}
 df$DRGnum <- as.numeric(substr(df$DRG.Definition, 1, 3))
 df$DRGlab <- substr(df$DRG.Definition, 7, max(nchar(as.character(df$DRG.Definition))))
 df$OHSU <- grepl("^OHSU", df$Provider.Name)
 ```
+
+Now that we have DRG in numeric form, merge the dataset to the MDC-DRG lookup.
+```{r MergeMDCDRG}
+df <- merge(df, drg, by.x=c("DRGnum"), by.y=c("drg"))
+```
+
 Get vector of MS-DRGs that OHSU has data for.
 ```{r OHSU-DRGs}
 drgOHSU <- df$DRGnum[df$OHSU]
 ```
 
+Create a subset of rows with just the DRGs in vector `drgOHSU`.
+```{r CreateSubset}
+dfSubset <- subset(df, DRGnum %in% drgOHSU)
+```
+
 *TO-DO*
 
-1. Create lookup table for MDC and DRG
 2. Create MDC vector of MDC codes that OHSU has data for
 3. Create working data subset that includes all providers from the MDCs in step 2.
 4. Fix violin plots
@@ -95,9 +108,8 @@ drgOHSU <- df$DRGnum[df$OHSU]
   * Add `DRGlab` to axis tick labels?
 
 
-Show the number of rows, the field names, and the first few rows.
+The dataset has `r nrow(df)` rows. Field names and the first few rows are below.
 ```{r PeekAtDataset}
-nrow(df)
 names(df)
 head(df)
 ```
@@ -106,7 +118,8 @@ Create geographic subsets of
 * Oregon providers
 * Portland metro providers
 * OHSU
-```{r CreateGeographicSubsets}
+*I don't use these in subsequent analysis, but the code seems useful. Keep, but don't evaluate.*
+```{r CreateGeographicSubsets, eval=FALSE}
 dfOR <- subset(df, Provider.State=="OR")
 dfPDXMetro <- df[grep("^OR - Portland", df$Hospital.Referral.Region.Description),]
 dfOHSU <- df[grep("^OHSU", df$Provider.Name),]
@@ -166,7 +179,7 @@ dfMDC25M <- subset(df, 974 <= DRGnum & DRGnum <= 977)
 According to [findacode.com](http://www.findacode.com/code-set.php?set=DRG&mdc=04), DRGs 207 and 208 (respiratory system with ventilator support) are grouped as medical DRGs under MDC 04 (diseases & disorders of the respiratory system). This doesn't seem right. I'm going to exclude these DRGs until further clarification.
 DRGs 998 (principal diagnosis invalid as discharge diagnosis) and 999 (ungroupable) are also excluded.
 
-Create function for violin plotting.
+Create function for plotting.
 ```{r DefinePlotFunction}
 DistnPlot <- function(d, title) {
   drg <- d$DRGnum[d$OHSU]

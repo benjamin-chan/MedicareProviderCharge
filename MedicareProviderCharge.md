@@ -1,7 +1,7 @@
 Medicare Provider Charge
 ========================
 
-Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on 2013-05-29 16:23:19 using R version 3.0.0 (2013-04-03).
+Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on 2013-05-30 09:22:14 using R version 3.0.0 (2013-04-03).
 
 Analyze CMS Medicare Provider Charge public use dataset. The data is documented and can be downloaded at the Medicare Provider Charge Data [website](http://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Medicare-Provider-Charge-Data/index.html).
 
@@ -29,7 +29,7 @@ require(RColorBrewer, quietly = TRUE)
 ```
 
 
-RCurl with https is being tempermental. Copy the dataset to the local folder and `read.table` from there. Read the entire dataset. Also read a MDC-DRG mapping table. This table comes from [CMS](http://www.cms.gov/Medicare/Medicare-Fee-for-Service-Payment/AcuteInpatientPPS/FY-2013-IPPS-Final-Rule-Home-Page-Items/FY2013-Final-Rule-Tables.html), [Table 5](http://www.cms.gov/Medicare/Medicare-Fee-for-Service-Payment/AcuteInpatientPPS/Downloads/FY_13_FR_Table_5.zip). Finally, create an MDC label table.
+RCurl with https is being tempermental. Copy the dataset to the local folder and `read.table` from there. Read the entire dataset. 
 
 ```r
 # url <-
@@ -37,6 +37,11 @@ RCurl with https is being tempermental. Copy the dataset to the local folder and
 # df <- read.csv(textConnection(url), header=TRUE, sep=',')
 df <- read.csv("Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv", header = TRUE, 
     sep = ",")
+```
+
+Also read a MDC-DRG mapping table. This table comes from [CMS](http://www.cms.gov/Medicare/Medicare-Fee-for-Service-Payment/AcuteInpatientPPS/FY-2013-IPPS-Final-Rule-Home-Page-Items/FY2013-Final-Rule-Tables.html), [Table 5](http://www.cms.gov/Medicare/Medicare-Fee-for-Service-Payment/AcuteInpatientPPS/Downloads/FY_13_FR_Table_5.zip). Finally, create an MDC label table.
+
+```r
 drg <- read.table("CMS-1588-F TABLE 5.txt", skip = 2, nrows = 751, sep = "\t", 
     col.names = c("drg", "postacute", "specialpay", "mdc", "type", "drglab", 
         "drgwgt", "meanLOSg", "meanLOGa"))
@@ -70,6 +75,14 @@ df$DRGlab <- substr(df$DRG.Definition, 7, max(nchar(as.character(df$DRG.Definiti
 df$OHSU <- grepl("^OHSU", df$Provider.Name)
 ```
 
+
+Now that we have DRG in numeric form, merge the dataset to the MDC-DRG lookup.
+
+```r
+df <- merge(df, drg, by.x = c("DRGnum"), by.y = c("drg"))
+```
+
+
 Get vector of MS-DRGs that OHSU has data for.
 
 ```r
@@ -77,9 +90,15 @@ drgOHSU <- df$DRGnum[df$OHSU]
 ```
 
 
+Create a subset of rows with just the DRGs in vector `drgOHSU`.
+
+```r
+dfSubset <- subset(df, DRGnum %in% drgOHSU)
+```
+
+
 *TO-DO*
 
-1. Create lookup table for MDC and DRG
 2. Create MDC vector of MDC codes that OHSU has data for
 3. Create working data subset that includes all providers from the MDCs in step 2.
 4. Fix violin plots
@@ -88,35 +107,36 @@ drgOHSU <- df$DRGnum[df$OHSU]
   * Add `DRGlab` to axis tick labels?
 
 
-Show the number of rows, the field names, and the first few rows.
-
-```r
-nrow(df)
-```
-
-```
-## [1] 163065
-```
+The dataset has 163065 rows. Field names and the first few rows are below.
 
 ```r
 names(df)
 ```
 
 ```
-##  [1] "DRG.Definition"                      
-##  [2] "Provider.Id"                         
-##  [3] "Provider.Name"                       
-##  [4] "Provider.Street.Address"             
-##  [5] "Provider.City"                       
-##  [6] "Provider.State"                      
-##  [7] "Provider.Zip.Code"                   
-##  [8] "Hospital.Referral.Region.Description"
-##  [9] "Total.Discharges"                    
-## [10] "Average.Covered.Charges"             
-## [11] "Average.Total.Payments"              
-## [12] "DRGnum"                              
+##  [1] "DRGnum"                              
+##  [2] "DRG.Definition"                      
+##  [3] "Provider.Id"                         
+##  [4] "Provider.Name"                       
+##  [5] "Provider.Street.Address"             
+##  [6] "Provider.City"                       
+##  [7] "Provider.State"                      
+##  [8] "Provider.Zip.Code"                   
+##  [9] "Hospital.Referral.Region.Description"
+## [10] "Total.Discharges"                    
+## [11] "Average.Covered.Charges"             
+## [12] "Average.Total.Payments"              
 ## [13] "DRGlab"                              
-## [14] "OHSU"
+## [14] "OHSU"                                
+## [15] "mdc"                                 
+## [16] "postacute"                           
+## [17] "specialpay"                          
+## [18] "type"                                
+## [19] "drglab"                              
+## [20] "drgwgt"                              
+## [21] "meanLOSg"                            
+## [22] "meanLOGa"                            
+## [23] "mdclab"
 ```
 
 ```r
@@ -124,48 +144,62 @@ head(df)
 ```
 
 ```
-##                                                    DRG.Definition
-## 1                        039 - EXTRACRANIAL PROCEDURES W/O CC/MCC
-## 2             057 - DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC
-## 3      064 - INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W MCC
-## 4       065 - INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W CC
-## 5 066 - INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W/O CC/MCC
-## 6                                        069 - TRANSIENT ISCHEMIA
-##   Provider.Id                    Provider.Name Provider.Street.Address
-## 1       10001 SOUTHEAST ALABAMA MEDICAL CENTER  1108 ROSS CLARK CIRCLE
-## 2       10001 SOUTHEAST ALABAMA MEDICAL CENTER  1108 ROSS CLARK CIRCLE
-## 3       10001 SOUTHEAST ALABAMA MEDICAL CENTER  1108 ROSS CLARK CIRCLE
-## 4       10001 SOUTHEAST ALABAMA MEDICAL CENTER  1108 ROSS CLARK CIRCLE
-## 5       10001 SOUTHEAST ALABAMA MEDICAL CENTER  1108 ROSS CLARK CIRCLE
-## 6       10001 SOUTHEAST ALABAMA MEDICAL CENTER  1108 ROSS CLARK CIRCLE
-##   Provider.City Provider.State Provider.Zip.Code
-## 1        DOTHAN             AL             36301
-## 2        DOTHAN             AL             36301
-## 3        DOTHAN             AL             36301
-## 4        DOTHAN             AL             36301
-## 5        DOTHAN             AL             36301
-## 6        DOTHAN             AL             36301
+##   DRGnum                           DRG.Definition Provider.Id
+## 1     39 039 - EXTRACRANIAL PROCEDURES W/O CC/MCC       10001
+## 2     39 039 - EXTRACRANIAL PROCEDURES W/O CC/MCC      500129
+## 3     39 039 - EXTRACRANIAL PROCEDURES W/O CC/MCC       40036
+## 4     39 039 - EXTRACRANIAL PROCEDURES W/O CC/MCC      250040
+## 5     39 039 - EXTRACRANIAL PROCEDURES W/O CC/MCC      220171
+## 6     39 039 - EXTRACRANIAL PROCEDURES W/O CC/MCC      380007
+##                                     Provider.Name  Provider.Street.Address
+## 1                SOUTHEAST ALABAMA MEDICAL CENTER   1108 ROSS CLARK CIRCLE
+## 2               TACOMA GENERAL ALLENMORE HOSPITAL         315 S MLK JR WAY
+## 3 BAPTIST HEALTH MEDICAL CENTER NORTH LITTLE ROCK    3333 SPRINGHILL DRIVE
+## 4                          SINGING RIVER HOSPITAL            2809 DENNY AV
+## 5                           LAHEY CLINIC HOSPITAL        41 & 45 MALL ROAD
+## 6                   LEGACY EMANUEL MEDICAL CENTER 2801 N GANTENBEIN AVENUE
+##     Provider.City Provider.State Provider.Zip.Code
+## 1          DOTHAN             AL             36301
+## 2          TACOMA             WA             98415
+## 3 NORTH LITTLE RO             AR             72117
+## 4      PASCAGOULA             MS             39581
+## 5      BURLINGTON             MA              1803
+## 6        PORTLAND             OR             97227
 ##   Hospital.Referral.Region.Description Total.Discharges
 ## 1                          AL - Dothan               91
-## 2                          AL - Dothan               38
-## 3                          AL - Dothan               84
-## 4                          AL - Dothan              169
-## 5                          AL - Dothan               33
-## 6                          AL - Dothan               37
-##   Average.Covered.Charges Average.Total.Payments DRGnum
-## 1                   32963                   5777     39
-## 2                   20313                   4895     57
-## 3                   38820                  10260     64
-## 4                   27345                   6542     65
-## 5                   17606                   4596     66
-## 6                   20689                   4134     69
-##                                                      DRGlab  OHSU
-## 1                        EXTRACRANIAL PROCEDURES W/O CC/MCC FALSE
-## 2             DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC FALSE
-## 3      INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W MCC FALSE
-## 4       INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W CC FALSE
-## 5 INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W/O CC/MCC FALSE
-## 6                                        TRANSIENT ISCHEMIA FALSE
+## 2                          WA - Tacoma               15
+## 3                     AR - Little Rock               35
+## 4                          AL - Mobile               24
+## 5                          MA - Boston               23
+## 6                        OR - Portland               11
+##   Average.Covered.Charges Average.Total.Payments
+## 1                   32963                   5777
+## 2                   53322                   7739
+## 3                   23182                   5575
+## 4                   47045                   5768
+## 5                   14742                   9084
+## 6                   32728                   8428
+##                               DRGlab  OHSU mdc postacute specialpay type
+## 1 EXTRACRANIAL PROCEDURES W/O CC/MCC FALSE  01        No         No SURG
+## 2 EXTRACRANIAL PROCEDURES W/O CC/MCC FALSE  01        No         No SURG
+## 3 EXTRACRANIAL PROCEDURES W/O CC/MCC FALSE  01        No         No SURG
+## 4 EXTRACRANIAL PROCEDURES W/O CC/MCC FALSE  01        No         No SURG
+## 5 EXTRACRANIAL PROCEDURES W/O CC/MCC FALSE  01        No         No SURG
+## 6 EXTRACRANIAL PROCEDURES W/O CC/MCC FALSE  01        No         No SURG
+##                               drglab drgwgt meanLOSg meanLOGa
+## 1 EXTRACRANIAL PROCEDURES W/O CC/MCC  1.028      1.4      1.6
+## 2 EXTRACRANIAL PROCEDURES W/O CC/MCC  1.028      1.4      1.6
+## 3 EXTRACRANIAL PROCEDURES W/O CC/MCC  1.028      1.4      1.6
+## 4 EXTRACRANIAL PROCEDURES W/O CC/MCC  1.028      1.4      1.6
+## 5 EXTRACRANIAL PROCEDURES W/O CC/MCC  1.028      1.4      1.6
+## 6 EXTRACRANIAL PROCEDURES W/O CC/MCC  1.028      1.4      1.6
+##           mdclab
+## 1 Nervous System
+## 2 Nervous System
+## 3 Nervous System
+## 4 Nervous System
+## 5 Nervous System
+## 6 Nervous System
 ```
 
 
@@ -173,6 +207,7 @@ Create geographic subsets of
 * Oregon providers
 * Portland metro providers
 * OHSU
+*I don't use these in subsequent analysis, but the code seems useful. Keep, but don't evaluate.*
 
 ```r
 dfOR <- subset(df, Provider.State == "OR")
@@ -238,7 +273,7 @@ dfMDC25M <- subset(df, 974 <= DRGnum & DRGnum <= 977)
 According to [findacode.com](http://www.findacode.com/code-set.php?set=DRG&mdc=04), DRGs 207 and 208 (respiratory system with ventilator support) are grouped as medical DRGs under MDC 04 (diseases & disorders of the respiratory system). This doesn't seem right. I'm going to exclude these DRGs until further clarification.
 DRGs 998 (principal diagnosis invalid as discharge diagnosis) and 999 (ungroupable) are also excluded.
 
-Create function for violin plotting.
+Create function for plotting.
 
 ```r
 DistnPlot <- function(d, title) {
