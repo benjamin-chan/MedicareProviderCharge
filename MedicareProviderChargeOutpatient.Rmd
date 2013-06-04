@@ -1,0 +1,97 @@
+Medicare Provider Charge Data: Outpatient
+========================================
+
+Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on `r paste(Sys.time())` using `r R.version.string`.
+
+Analyze CMS Medicare Provider Charge Data: Outpatient public use dataset. The data is documented and can be downloaded at the Medicare Provider Charge Data: Outpatient [website](http://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Medicare-Provider-Charge-Data/Outpatient.html).
+
+>The data provided here include estimated hospital-specific charges for 30 Ambulatory Payment Classification (APC) Groups paid under the Medicare Outpatient Prospective Payment System (OPPS) for Calendar Year (CY) 2011.  The Medicare payment amount includes the APC payment amount, the beneficiary Part B coinsurance amount and the beneficiary deductible amount.
+
+>For these APCs, the estimated average charges and the average Medicare payments are provided at the individual hospital level.  The actual charges at an individual hospital for an individual service within these APC groups may differ.   For a more complete discussion of the claims criteria used in setting the Medicare payment rates for hospital outpatient services, see the Medicare CY 2013 Outpatient Prospective Payment System (OPPS) Claims Accounting document available on the CMS website at http://www.cms.gov/Medicare/Medicare-Fee-for-Service-Payment/HospitalOutpatientPPS/Downloads/CMS-1589-FC-Claims-Accounting-narrative.pdf.  This estimated outpatient charge data supplements the inpatient charge data available on the CMS Medicare Provider Charge Data Inpatient website (available via the link in the left navigation bar).
+
+--------------------------------------------------------------------------------
+
+Reading and manipulating the data
+---------------------------------
+
+Load the required libraries.
+```{r LoadLibraries, results='hide'}
+require(RCurl, quietly=TRUE)
+require(xtable, quietly=TRUE)
+require(ggplot2, quietly=TRUE)
+require(scales, quietly=TRUE)
+require(RColorBrewer, quietly=TRUE)
+```
+
+RCurl with https is being tempermental. Copy the dataset to the local folder and `read.table` from there. Read the entire dataset. 
+```{r ReadData}
+# url <- getURL("https://dl.dropboxusercontent.com/u/386956/Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv")
+# df <- read.csv(textConnection(url), header=TRUE, sep=",")
+df <- read.csv("Medicare_Provider_Charge_Outpatient_APC30_CY2011.csv", header=TRUE, sep=",")
+```
+
+The raw data has `r nrow(df)` rows. Field names and the first few rows are below.
+```{r PeekAtRawDataset}
+names(df)
+head(df)
+```
+
+Create some new fields. 
+* `APCnum` is a numeric vector of the APC code without the description
+* `APCchar` is a character vector of the APC code without the description
+* `APCdesc` is a character vector of the APC description
+* `isOregon` is a logical vector indicating if the row is from provider in Oregon
+* `isPDXmetro` is a logical vector indicating if the row is from a provider in the Portland metro hospital referral region
+* `isOHSU` is a logical vector indicating if the row is from an OHSU provider
+```{r CreateVariables}
+df$APCnum <- as.numeric(substr(df$APC, 1, 4))
+df$APCchar <- substr(df$APC, 1, 4)
+df$APCdesc <- substr(df$APC, 8, nchar(as.character(df$APC)))
+df$isOregon <- df$Provider.State == "OR"
+df$isPDXmetro <- grepl("^OR - Portland", df$Hospital.Referral.Region.Description)
+df$isOHSU <- grepl("^OHSU", df$Provider.Name)
+```
+
+Get vector of APCs that OHSU has data for.
+```{r OHSU-APCs}
+apcOHSU <- as.vector(df$APCnum[df$isOHSU])
+```
+
+Build lookup table of APCs.
+```{r BuildAPClookup}
+apc <- subset(df, isOHSU, select=c(APC, APCnum, APCchar, APCdesc))
+```
+
+Create a subset of rows with just the APCs in vector `apcOHSU`.
+```{r CreateSubset}
+dfSubset <- subset(df, APCnum %in% apcOHSU)
+```
+
+The subset data has `r nrow(dfSubset)` rows. Field names and the first few rows are below.
+```{r PeekAtAnalyticDataset}
+names(dfSubset)
+head(dfSubset)
+```
+
+Plot the data
+-------------
+
+List the APCs with their descriptions
+```{r ShowAPClookup, results='asis'}
+print(xtable(apc[, c("APCchar", "APCdesc")]), include.rownames=FALSE, type="html")
+```
+
+Plot each APC.
+* Blue dot is OHSU
+* Grey dots are Portland metro hospitals
+* Violins represent the nationwide distribution
+```{r AverageEstimatedSubmittedCharges, fig.width=15}
+ggplot(dfSubset, aes(x=APCchar, y=Average.Estimated.Submitted.Charges)) +
+  geom_violin(alpha=1/2, fill="grey") +
+  geom_jitter(data=dfSubset[dfSubset$isPDXmetro,], alpha=1/2, na.rm=TRUE) + 
+  geom_point(data=dfSubset[dfSubset$isOHSU,], alpha=2/3, color=rgb(0, 73, 144, max=255), size=5) + 
+  scale_y_log10(breaks=c(100, 200, 400, 1000, 2000, 4000, 10000, 20000), labels=c("$100", "$200", "$400", "$1K", "$2K", "$4K", "$10K", "$20K")) +
+  labs(x="APC", y="Average Estimated Submitted Charges ($1,000s)") +
+  theme_bw() +
+  theme(legend.position="bottom", panel.grid.major.x=element_blank(), panel.grid.major.y=element_line(color="grey"))
+```
