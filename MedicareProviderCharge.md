@@ -1,7 +1,7 @@
 Medicare Provider Charge
 ========================
 
-Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on 2013-05-30 12:19:24 using R version 3.0.0 (2013-04-03).
+Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on 2013-06-04 14:30:02 using R version 3.0.0 (2013-04-03).
 
 Analyze CMS Medicare Provider Charge public use dataset. The data is documented and can be downloaded at the Medicare Provider Charge Data [website](http://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Medicare-Provider-Charge-Data/index.html).
 
@@ -39,6 +39,70 @@ df <- read.csv("Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv", header = 
     sep = ",")
 ```
 
+
+The raw data has 163065 rows. Field names and the first few rows are below.
+
+```r
+names(df)
+```
+
+```
+##  [1] "DRG.Definition"                      
+##  [2] "Provider.Id"                         
+##  [3] "Provider.Name"                       
+##  [4] "Provider.Street.Address"             
+##  [5] "Provider.City"                       
+##  [6] "Provider.State"                      
+##  [7] "Provider.Zip.Code"                   
+##  [8] "Hospital.Referral.Region.Description"
+##  [9] "Total.Discharges"                    
+## [10] "Average.Covered.Charges"             
+## [11] "Average.Total.Payments"
+```
+
+```r
+head(df)
+```
+
+```
+##                                                    DRG.Definition
+## 1                        039 - EXTRACRANIAL PROCEDURES W/O CC/MCC
+## 2             057 - DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC
+## 3      064 - INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W MCC
+## 4       065 - INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W CC
+## 5 066 - INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W/O CC/MCC
+## 6                                        069 - TRANSIENT ISCHEMIA
+##   Provider.Id                    Provider.Name Provider.Street.Address
+## 1       10001 SOUTHEAST ALABAMA MEDICAL CENTER  1108 ROSS CLARK CIRCLE
+## 2       10001 SOUTHEAST ALABAMA MEDICAL CENTER  1108 ROSS CLARK CIRCLE
+## 3       10001 SOUTHEAST ALABAMA MEDICAL CENTER  1108 ROSS CLARK CIRCLE
+## 4       10001 SOUTHEAST ALABAMA MEDICAL CENTER  1108 ROSS CLARK CIRCLE
+## 5       10001 SOUTHEAST ALABAMA MEDICAL CENTER  1108 ROSS CLARK CIRCLE
+## 6       10001 SOUTHEAST ALABAMA MEDICAL CENTER  1108 ROSS CLARK CIRCLE
+##   Provider.City Provider.State Provider.Zip.Code
+## 1        DOTHAN             AL             36301
+## 2        DOTHAN             AL             36301
+## 3        DOTHAN             AL             36301
+## 4        DOTHAN             AL             36301
+## 5        DOTHAN             AL             36301
+## 6        DOTHAN             AL             36301
+##   Hospital.Referral.Region.Description Total.Discharges
+## 1                          AL - Dothan               91
+## 2                          AL - Dothan               38
+## 3                          AL - Dothan               84
+## 4                          AL - Dothan              169
+## 5                          AL - Dothan               33
+## 6                          AL - Dothan               37
+##   Average.Covered.Charges Average.Total.Payments
+## 1                   32963                   5777
+## 2                   20313                   4895
+## 3                   38820                  10260
+## 4                   27345                   6542
+## 5                   17606                   4596
+## 6                   20689                   4134
+```
+
+
 Also read a MDC-DRG mapping table. This table comes from [CMS](http://www.cms.gov/Medicare/Medicare-Fee-for-Service-Payment/AcuteInpatientPPS/FY-2013-IPPS-Final-Rule-Home-Page-Items/FY2013-Final-Rule-Tables.html), [Table 5](http://www.cms.gov/Medicare/Medicare-Fee-for-Service-Payment/AcuteInpatientPPS/Downloads/FY_13_FR_Table_5.zip). Finally, create an MDC label table.
 
 ```r
@@ -66,13 +130,14 @@ drg <- merge(drg, mdc, by = c("mdc"))
 
 Create some new fields. 
 * `DRGnum` is a numeric vector of the MS-DRG number without the description
-* `DRGlab` is a character vector of the MS-DRG description without the number
-* `OHSU` is a logical vector indicating if the row is from an OHSU provider
+* `DRGchar` is a character vector of the MS-DRG number without the description
+* `isOregon` is a logical vector indicating if the row is from provider in Oregon
+* `isPDXmetro` is a logical vector indicating if the row is from a provider in the Portland metro hospital referral region
+* `isOHSU` is a logical vector indicating if the row is from an OHSU provider
 
 ```r
 df$DRGnum <- as.numeric(substr(df$DRG.Definition, 1, 3))
 df$DRGchar <- substr(df$DRG.Definition, 1, 3)
-df$DRGlab <- substr(df$DRG.Definition, 7, max(nchar(as.character(df$DRG.Definition))))
 df$isOregon <- df$Provider.State == "OR"
 df$isPDXmetro <- grepl("^OR - Portland", df$Hospital.Referral.Region.Description)
 df$isOHSU <- grepl("^OHSU", df$Provider.Name)
@@ -101,10 +166,10 @@ dfSubset <- subset(df, DRGnum %in% drgOHSU & !is.na(type))
 ```
 
 
-The dataset has 163065 rows. Field names and the first few rows are below.
+The subset data has 125746 rows. Field names and the first few rows are below.
 
 ```r
-names(df)
+names(dfSubset)
 ```
 
 ```
@@ -121,82 +186,81 @@ names(df)
 ## [11] "Average.Covered.Charges"             
 ## [12] "Average.Total.Payments"              
 ## [13] "DRGchar"                             
-## [14] "DRGlab"                              
-## [15] "isOregon"                            
-## [16] "isPDXmetro"                          
-## [17] "isOHSU"                              
-## [18] "mdc"                                 
-## [19] "postacute"                           
-## [20] "specialpay"                          
-## [21] "type"                                
-## [22] "drglab"                              
-## [23] "drgwgt"                              
-## [24] "meanLOSg"                            
-## [25] "meanLOGa"                            
-## [26] "mdclab"
+## [14] "isOregon"                            
+## [15] "isPDXmetro"                          
+## [16] "isOHSU"                              
+## [17] "mdc"                                 
+## [18] "postacute"                           
+## [19] "specialpay"                          
+## [20] "type"                                
+## [21] "drglab"                              
+## [22] "drgwgt"                              
+## [23] "meanLOSg"                            
+## [24] "meanLOGa"                            
+## [25] "mdclab"
 ```
 
 ```r
-head(df)
+head(dfSubset)
 ```
 
 ```
-##   DRGnum                           DRG.Definition Provider.Id
-## 1     39 039 - EXTRACRANIAL PROCEDURES W/O CC/MCC       10001
-## 2     39 039 - EXTRACRANIAL PROCEDURES W/O CC/MCC      500129
-## 3     39 039 - EXTRACRANIAL PROCEDURES W/O CC/MCC       40036
-## 4     39 039 - EXTRACRANIAL PROCEDURES W/O CC/MCC      250040
-## 5     39 039 - EXTRACRANIAL PROCEDURES W/O CC/MCC      220171
-## 6     39 039 - EXTRACRANIAL PROCEDURES W/O CC/MCC      380007
-##                                     Provider.Name  Provider.Street.Address
-## 1                SOUTHEAST ALABAMA MEDICAL CENTER   1108 ROSS CLARK CIRCLE
-## 2               TACOMA GENERAL ALLENMORE HOSPITAL         315 S MLK JR WAY
-## 3 BAPTIST HEALTH MEDICAL CENTER NORTH LITTLE ROCK    3333 SPRINGHILL DRIVE
-## 4                          SINGING RIVER HOSPITAL            2809 DENNY AV
-## 5                           LAHEY CLINIC HOSPITAL        41 & 45 MALL ROAD
-## 6                   LEGACY EMANUEL MEDICAL CENTER 2801 N GANTENBEIN AVENUE
-##     Provider.City Provider.State Provider.Zip.Code
-## 1          DOTHAN             AL             36301
-## 2          TACOMA             WA             98415
-## 3 NORTH LITTLE RO             AR             72117
-## 4      PASCAGOULA             MS             39581
-## 5      BURLINGTON             MA              1803
-## 6        PORTLAND             OR             97227
-##   Hospital.Referral.Region.Description Total.Discharges
-## 1                          AL - Dothan               91
-## 2                          WA - Tacoma               15
-## 3                     AR - Little Rock               35
-## 4                          AL - Mobile               24
-## 5                          MA - Boston               23
-## 6                        OR - Portland               11
-##   Average.Covered.Charges Average.Total.Payments DRGchar
-## 1                   32963                   5777     039
-## 2                   53322                   7739     039
-## 3                   23182                   5575     039
-## 4                   47045                   5768     039
-## 5                   14742                   9084     039
-## 6                   32728                   8428     039
-##                               DRGlab isOregon isPDXmetro isOHSU mdc
-## 1 EXTRACRANIAL PROCEDURES W/O CC/MCC    FALSE      FALSE  FALSE  01
-## 2 EXTRACRANIAL PROCEDURES W/O CC/MCC    FALSE      FALSE  FALSE  01
-## 3 EXTRACRANIAL PROCEDURES W/O CC/MCC    FALSE      FALSE  FALSE  01
-## 4 EXTRACRANIAL PROCEDURES W/O CC/MCC    FALSE      FALSE  FALSE  01
-## 5 EXTRACRANIAL PROCEDURES W/O CC/MCC    FALSE      FALSE  FALSE  01
-## 6 EXTRACRANIAL PROCEDURES W/O CC/MCC     TRUE       TRUE  FALSE  01
-##   postacute specialpay type                             drglab drgwgt
-## 1        No         No SURG EXTRACRANIAL PROCEDURES W/O CC/MCC  1.028
-## 2        No         No SURG EXTRACRANIAL PROCEDURES W/O CC/MCC  1.028
-## 3        No         No SURG EXTRACRANIAL PROCEDURES W/O CC/MCC  1.028
-## 4        No         No SURG EXTRACRANIAL PROCEDURES W/O CC/MCC  1.028
-## 5        No         No SURG EXTRACRANIAL PROCEDURES W/O CC/MCC  1.028
-## 6        No         No SURG EXTRACRANIAL PROCEDURES W/O CC/MCC  1.028
-##   meanLOSg meanLOGa         mdclab
-## 1      1.4      1.6 Nervous System
-## 2      1.4      1.6 Nervous System
-## 3      1.4      1.6 Nervous System
-## 4      1.4      1.6 Nervous System
-## 5      1.4      1.6 Nervous System
-## 6      1.4      1.6 Nervous System
+##      DRGnum                                      DRG.Definition
+## 1080     57 057 - DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC
+## 1081     57 057 - DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC
+## 1082     57 057 - DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC
+## 1083     57 057 - DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC
+## 1084     57 057 - DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC
+## 1085     57 057 - DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC
+##      Provider.Id                       Provider.Name
+## 1080      210057      SHADY GROVE ADVENTIST HOSPITAL
+## 1081      300001                    CONCORD HOSPITAL
+## 1082      310019 ST JOSEPH'S REGIONAL MEDICAL CENTER
+## 1083      310017                    CHILTON HOSPITAL
+## 1084      490011 BON SECOURS - DEPAUL MEDICAL CENTER
+## 1085      450289     HARRIS COUNTY HOSPITAL DISTRICT
+##      Provider.Street.Address  Provider.City Provider.State
+## 1080     9901 MEDICAL CTR DR      ROCKVILLE             MD
+## 1081         250 PLEASANT ST        CONCORD             NH
+## 1082             703 MAIN ST       PATERSON             NJ
+## 1083         97 WEST PARKWAY POMPTON PLAINS             NJ
+## 1084       150 KINGSLEY LANE        NORFOLK             VA
+## 1085         2525 HOLLY HALL        HOUSTON             TX
+##      Provider.Zip.Code Hospital.Referral.Region.Description
+## 1080             20850                      DC - Washington
+## 1081              3301                      NH - Manchester
+## 1082              7503                        NJ - Paterson
+## 1083              7444                        NJ - Paterson
+## 1084             23505                         VA - Norfolk
+## 1085             77054                         TX - Houston
+##      Total.Discharges Average.Covered.Charges Average.Total.Payments
+## 1080               20                    8692                   8171
+## 1081               28                   16179                   5760
+## 1082               39                   80152                  11018
+## 1083               36                   30019                   6248
+## 1084               12                   15876                   5637
+## 1085               16                   28770                   9727
+##      DRGchar isOregon isPDXmetro isOHSU mdc postacute specialpay type
+## 1080     057    FALSE      FALSE  FALSE  01       Yes         No  MED
+## 1081     057    FALSE      FALSE  FALSE  01       Yes         No  MED
+## 1082     057    FALSE      FALSE  FALSE  01       Yes         No  MED
+## 1083     057    FALSE      FALSE  FALSE  01       Yes         No  MED
+## 1084     057    FALSE      FALSE  FALSE  01       Yes         No  MED
+## 1085     057    FALSE      FALSE  FALSE  01       Yes         No  MED
+##                                             drglab drgwgt meanLOSg
+## 1080 DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC  0.968      3.6
+## 1081 DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC  0.968      3.6
+## 1082 DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC  0.968      3.6
+## 1083 DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC  0.968      3.6
+## 1084 DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC  0.968      3.6
+## 1085 DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC  0.968      3.6
+##      meanLOGa         mdclab
+## 1080      4.7 Nervous System
+## 1081      4.7 Nervous System
+## 1082      4.7 Nervous System
+## 1083      4.7 Nervous System
+## 1084      4.7 Nervous System
+## 1085      4.7 Nervous System
 ```
 
 
