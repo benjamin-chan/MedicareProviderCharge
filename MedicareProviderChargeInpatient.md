@@ -1,7 +1,7 @@
 Medicare Provider Charge Data: Inpatient
 ========================================
 
-Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on 2013-06-04 15:27:18 using R version 3.0.0 (2013-04-03).
+Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on 2013-06-06 10:50:15 using R version 3.0.0 (2013-04-03).
 
 Analyze CMS Medicare Provider Charge Data: Inpatient public use dataset. The data is documented and can be downloaded at the Medicare Provider Charge Data: Inpatient [website](http://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Medicare-Provider-Charge-Data/Inpatient.html).
 
@@ -289,7 +289,7 @@ DistnPlot <- function(d, t) {
   ggplot(d, aes(x=DRGchar, y=Average.Covered.Charges)) +
 #     geom_boxplot(alpha=1/2, fill="grey", outlier.size=0) +
     geom_violin(alpha=1/2, fill="grey") +
-    geom_jitter(data=d[d$isPDXmetro,], alpha=1/2, na.rm=TRUE) + 
+    geom_jitter(data=d[d$isPDXmetro & !d$isOHSU,], alpha=1/2, na.rm=TRUE) + 
     geom_point(data=d[d$isOHSU,], alpha=2/3, color=rgb(0, 73, 144, max=255), size=5) + 
     facet_wrap(~ type, ncol=1, scales="free") +
     scale_y_log10(breaks=c(1E4, 2E4, 4E4, 8E4, 16E4, 32E4), labels=c("$10", "$20", "$40", "$80", "$160", "$320")) +
@@ -311,8 +311,121 @@ for (i in 1:length(mdcOHSU)) {
     d <- subset(dfSubset, mdc == j)
     t <- paste("MDC", mdc$mdc[mdc == j], mdc$mdclab[mdc == j])
     show(DistnPlot(d, t))
+    drglab <- subset(drg, drg %in% d$DRGnum, select = c(drg, drglab))
+    drglab <- drglab[order(drglab$drg), ]
+    print(xtable(drglab), type = "html", include.rownames = FALSE, comment = FALSE)
 }
 ```
 
-![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges1.png) ![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges2.png) ![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges3.png) ![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges4.png) ![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges5.png) ![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges6.png) ![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges7.png) ![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges8.png) ![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges9.png) ![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges10.png) ![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges11.png) ![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges12.png) ![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges13.png) ![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges14.png) 
+![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges1.png) <TABLE border=1>
+<TR> <TH> drg </TH> <TH> drglab </TH>  </TR>
+  <TR> <TD align="right">  57 </TD> <TD> DEGENERATIVE NERVOUS SYSTEM DISORDERS W/O MCC </TD> </TR>
+  <TR> <TD align="right">  64 </TD> <TD> INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W MCC </TD> </TR>
+  <TR> <TD align="right">  65 </TD> <TD> INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W CC </TD> </TR>
+  <TR> <TD align="right">  66 </TD> <TD> INTRACRANIAL HEMORRHAGE OR CEREBRAL INFARCTION W/O CC/MCC </TD> </TR>
+  <TR> <TD align="right">  69 </TD> <TD> TRANSIENT ISCHEMIA </TD> </TR>
+  <TR> <TD align="right"> 101 </TD> <TD> SEIZURES W/O MCC </TD> </TR>
+   </TABLE>
+![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges2.png) <TABLE border=1>
+<TR> <TH> drg </TH> <TH> drglab </TH>  </TR>
+  <TR> <TD align="right"> 177 </TD> <TD> RESPIRATORY INFECTIONS &amp  INFLAMMATIONS W MCC </TD> </TR>
+  <TR> <TD align="right"> 178 </TD> <TD> RESPIRATORY INFECTIONS &amp  INFLAMMATIONS W CC </TD> </TR>
+  <TR> <TD align="right"> 190 </TD> <TD> CHRONIC OBSTRUCTIVE PULMONARY DISEASE W MCC </TD> </TR>
+  <TR> <TD align="right"> 191 </TD> <TD> CHRONIC OBSTRUCTIVE PULMONARY DISEASE W CC </TD> </TR>
+  <TR> <TD align="right"> 192 </TD> <TD> CHRONIC OBSTRUCTIVE PULMONARY DISEASE W/O CC/MCC </TD> </TR>
+  <TR> <TD align="right"> 194 </TD> <TD> SIMPLE PNEUMONIA &amp  PLEURISY W CC </TD> </TR>
+  <TR> <TD align="right"> 208 </TD> <TD> RESPIRATORY SYSTEM DIAGNOSIS W VENTILATOR SUPPORT &lt 96 HOURS </TD> </TR>
+   </TABLE>
+![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges3.png) <TABLE border=1>
+<TR> <TH> drg </TH> <TH> drglab </TH>  </TR>
+  <TR> <TD align="right"> 238 </TD> <TD> MAJOR CARDIOVASC PROCEDURES W/O MCC </TD> </TR>
+  <TR> <TD align="right"> 243 </TD> <TD> PERMANENT CARDIAC PACEMAKER IMPLANT W CC </TD> </TR>
+  <TR> <TD align="right"> 247 </TD> <TD> PERC CARDIOVASC PROC W DRUG-ELUTING STENT W/O MCC </TD> </TR>
+  <TR> <TD align="right"> 249 </TD> <TD> PERC CARDIOVASC PROC W NON-DRUG-ELUTING STENT W/O MCC </TD> </TR>
+  <TR> <TD align="right"> 251 </TD> <TD> PERC CARDIOVASC PROC W/O CORONARY ARTERY STENT W/O MCC </TD> </TR>
+  <TR> <TD align="right"> 252 </TD> <TD> OTHER VASCULAR PROCEDURES W MCC </TD> </TR>
+  <TR> <TD align="right"> 253 </TD> <TD> OTHER VASCULAR PROCEDURES W CC </TD> </TR>
+  <TR> <TD align="right"> 280 </TD> <TD> ACUTE MYOCARDIAL INFARCTION, DISCHARGED ALIVE W MCC </TD> </TR>
+  <TR> <TD align="right"> 281 </TD> <TD> ACUTE MYOCARDIAL INFARCTION, DISCHARGED ALIVE W CC </TD> </TR>
+  <TR> <TD align="right"> 282 </TD> <TD> ACUTE MYOCARDIAL INFARCTION, DISCHARGED ALIVE W/O CC/MCC </TD> </TR>
+  <TR> <TD align="right"> 287 </TD> <TD> CIRCULATORY DISORDERS EXCEPT AMI, W CARD CATH W/O MCC </TD> </TR>
+  <TR> <TD align="right"> 291 </TD> <TD> HEART FAILURE &amp  SHOCK W MCC </TD> </TR>
+  <TR> <TD align="right"> 292 </TD> <TD> HEART FAILURE &amp  SHOCK W CC </TD> </TR>
+  <TR> <TD align="right"> 293 </TD> <TD> HEART FAILURE &amp  SHOCK W/O CC/MCC </TD> </TR>
+  <TR> <TD align="right"> 300 </TD> <TD> PERIPHERAL VASCULAR DISORDERS W CC </TD> </TR>
+  <TR> <TD align="right"> 308 </TD> <TD> CARDIAC ARRHYTHMIA &amp  CONDUCTION DISORDERS W MCC </TD> </TR>
+  <TR> <TD align="right"> 309 </TD> <TD> CARDIAC ARRHYTHMIA &amp  CONDUCTION DISORDERS W CC </TD> </TR>
+  <TR> <TD align="right"> 310 </TD> <TD> CARDIAC ARRHYTHMIA &amp  CONDUCTION DISORDERS W/O CC/MCC </TD> </TR>
+  <TR> <TD align="right"> 312 </TD> <TD> SYNCOPE &amp  COLLAPSE </TD> </TR>
+  <TR> <TD align="right"> 313 </TD> <TD> CHEST PAIN </TD> </TR>
+  <TR> <TD align="right"> 314 </TD> <TD> OTHER CIRCULATORY SYSTEM DIAGNOSES W MCC </TD> </TR>
+  <TR> <TD align="right"> 315 </TD> <TD> OTHER CIRCULATORY SYSTEM DIAGNOSES W CC </TD> </TR>
+   </TABLE>
+![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges4.png) <TABLE border=1>
+<TR> <TH> drg </TH> <TH> drglab </TH>  </TR>
+  <TR> <TD align="right"> 329 </TD> <TD> MAJOR SMALL &amp  LARGE BOWEL PROCEDURES W MCC </TD> </TR>
+  <TR> <TD align="right"> 330 </TD> <TD> MAJOR SMALL &amp  LARGE BOWEL PROCEDURES W CC </TD> </TR>
+  <TR> <TD align="right"> 372 </TD> <TD> MAJOR GASTROINTESTINAL DISORDERS &amp  PERITONEAL INFECTIONS W CC </TD> </TR>
+  <TR> <TD align="right"> 377 </TD> <TD> G.I. HEMORRHAGE W MCC </TD> </TR>
+  <TR> <TD align="right"> 378 </TD> <TD> G.I. HEMORRHAGE W CC </TD> </TR>
+  <TR> <TD align="right"> 389 </TD> <TD> G.I. OBSTRUCTION W CC </TD> </TR>
+  <TR> <TD align="right"> 390 </TD> <TD> G.I. OBSTRUCTION W/O CC/MCC </TD> </TR>
+  <TR> <TD align="right"> 391 </TD> <TD> ESOPHAGITIS, GASTROENT &amp  MISC DIGEST DISORDERS W MCC </TD> </TR>
+  <TR> <TD align="right"> 392 </TD> <TD> ESOPHAGITIS, GASTROENT &amp  MISC DIGEST DISORDERS W/O MCC </TD> </TR>
+  <TR> <TD align="right"> 394 </TD> <TD> OTHER DIGESTIVE SYSTEM DIAGNOSES W CC </TD> </TR>
+   </TABLE>
+![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges5.png) <TABLE border=1>
+<TR> <TH> drg </TH> <TH> drglab </TH>  </TR>
+  <TR> <TD align="right"> 460 </TD> <TD> SPINAL FUSION EXCEPT CERVICAL W/O MCC </TD> </TR>
+  <TR> <TD align="right"> 470 </TD> <TD> MAJOR JOINT REPLACEMENT OR REATTACHMENT OF LOWER EXTREMITY W/O MCC </TD> </TR>
+  <TR> <TD align="right"> 473 </TD> <TD> CERVICAL SPINAL FUSION W/O CC/MCC </TD> </TR>
+  <TR> <TD align="right"> 481 </TD> <TD> HIP &amp  FEMUR PROCEDURES EXCEPT MAJOR JOINT W CC </TD> </TR>
+  <TR> <TD align="right"> 491 </TD> <TD> BACK &amp  NECK PROC EXC SPINAL FUSION W/O CC/MCC </TD> </TR>
+  <TR> <TD align="right"> 552 </TD> <TD> MEDICAL BACK PROBLEMS W/O MCC </TD> </TR>
+   </TABLE>
+![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges6.png) <TABLE border=1>
+<TR> <TH> drg </TH> <TH> drglab </TH>  </TR>
+  <TR> <TD align="right"> 603 </TD> <TD> CELLULITIS W/O MCC </TD> </TR>
+   </TABLE>
+![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges7.png) <TABLE border=1>
+<TR> <TH> drg </TH> <TH> drglab </TH>  </TR>
+  <TR> <TD align="right"> 638 </TD> <TD> DIABETES W CC </TD> </TR>
+  <TR> <TD align="right"> 640 </TD> <TD> MISC DISORDERS OF NUTRITION,METABOLISM,FLUIDS/ELECTROLYTES W MCC </TD> </TR>
+  <TR> <TD align="right"> 641 </TD> <TD> MISC DISORDERS OF NUTRITION,METABOLISM,FLUIDS/ELECTROLYTES W/O MCC </TD> </TR>
+   </TABLE>
+![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges8.png) <TABLE border=1>
+<TR> <TH> drg </TH> <TH> drglab </TH>  </TR>
+  <TR> <TD align="right"> 682 </TD> <TD> RENAL FAILURE W MCC </TD> </TR>
+  <TR> <TD align="right"> 683 </TD> <TD> RENAL FAILURE W CC </TD> </TR>
+  <TR> <TD align="right"> 684 </TD> <TD> RENAL FAILURE W/O CC/MCC </TD> </TR>
+  <TR> <TD align="right"> 690 </TD> <TD> KIDNEY &amp  URINARY TRACT INFECTIONS W/O MCC </TD> </TR>
+  <TR> <TD align="right"> 699 </TD> <TD> OTHER KIDNEY &amp  URINARY TRACT DIAGNOSES W CC </TD> </TR>
+   </TABLE>
+![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges9.png) <TABLE border=1>
+<TR> <TH> drg </TH> <TH> drglab </TH>  </TR>
+  <TR> <TD align="right"> 812 </TD> <TD> RED BLOOD CELL DISORDERS W/O MCC </TD> </TR>
+   </TABLE>
+![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges10.png) <TABLE border=1>
+<TR> <TH> drg </TH> <TH> drglab </TH>  </TR>
+  <TR> <TD align="right"> 853 </TD> <TD> INFECTIOUS &amp  PARASITIC DISEASES W O.R. PROCEDURE W MCC </TD> </TR>
+  <TR> <TD align="right"> 871 </TD> <TD> SEPTICEMIA OR SEVERE SEPSIS W/O MV 96+ HOURS W MCC </TD> </TR>
+  <TR> <TD align="right"> 872 </TD> <TD> SEPTICEMIA OR SEVERE SEPSIS W/O MV 96+ HOURS W/O MCC </TD> </TR>
+   </TABLE>
+![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges11.png) <TABLE border=1>
+<TR> <TH> drg </TH> <TH> drglab </TH>  </TR>
+  <TR> <TD align="right"> 885 </TD> <TD> PSYCHOSES </TD> </TR>
+   </TABLE>
+![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges12.png) <TABLE border=1>
+<TR> <TH> drg </TH> <TH> drglab </TH>  </TR>
+  <TR> <TD align="right"> 897 </TD> <TD> ALCOHOL/DRUG ABUSE OR DEPENDENCE W/O REHABILITATION THERAPY W/O MCC </TD> </TR>
+   </TABLE>
+![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges13.png) <TABLE border=1>
+<TR> <TH> drg </TH> <TH> drglab </TH>  </TR>
+  <TR> <TD align="right"> 917 </TD> <TD> POISONING &amp  TOXIC EFFECTS OF DRUGS W MCC </TD> </TR>
+  <TR> <TD align="right"> 918 </TD> <TD> POISONING &amp  TOXIC EFFECTS OF DRUGS W/O MCC </TD> </TR>
+   </TABLE>
+![plot of chunk AverageCoveredCharges](figure/AverageCoveredCharges14.png) <TABLE border=1>
+<TR> <TH> drg </TH> <TH> drglab </TH>  </TR>
+  <TR> <TD align="right"> 948 </TD> <TD> SIGNS &amp  SYMPTOMS W/O MCC </TD> </TR>
+   </TABLE>
 

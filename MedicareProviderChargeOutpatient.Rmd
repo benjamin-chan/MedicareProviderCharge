@@ -76,11 +76,6 @@ head(dfSubset)
 Plot the data
 -------------
 
-List the APCs with their descriptions
-```{r ShowAPClookup, results='asis'}
-print(xtable(apc[, c("APCchar", "APCdesc")]), include.rownames=FALSE, type="html")
-```
-
 Plot each APC.
 * Blue dot is OHSU
 * Grey dots are Portland metro hospitals
@@ -94,4 +89,9 @@ ggplot(dfSubset, aes(x=APCchar, y=Average.Estimated.Submitted.Charges)) +
   labs(x="APC", y="Average Estimated Submitted Charges ($1,000s)") +
   theme_bw() +
   theme(legend.position="bottom", panel.grid.major.x=element_blank(), panel.grid.major.y=element_line(color="grey"))
+```
+
+List the APCs with their descriptions
+```{r ShowAPClookup, results='asis'}
+print(xtable(apc[, c("APCchar", "APCdesc")]), include.rownames=FALSE, type="html")
 ```

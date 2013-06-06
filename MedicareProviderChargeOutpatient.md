@@ -1,7 +1,7 @@
 Medicare Provider Charge Data: Outpatient
 ========================================
 
-Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on 2013-06-04 15:34:57 using R version 3.0.0 (2013-04-03).
+Last update by Benjamin Chan (<benjamin.ks.chan@gmail.com>) on 2013-06-06 10:56:26 using R version 3.0.0 (2013-04-03).
 
 Analyze CMS Medicare Provider Charge Data: Outpatient public use dataset. The data is documented and can be downloaded at the Medicare Provider Charge Data: Outpatient [website](http://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Medicare-Provider-Charge-Data/Outpatient.html).
 
@@ -231,6 +231,25 @@ head(dfSubset)
 Plot the data
 -------------
 
+Plot each APC.
+* Blue dot is OHSU
+* Grey dots are Portland metro hospitals
+* Violins represent the nationwide distribution
+
+```r
+ggplot(dfSubset, aes(x = APCchar, y = Average.Estimated.Submitted.Charges)) + 
+    geom_violin(alpha = 1/2, fill = "grey") + geom_jitter(data = dfSubset[dfSubset$isPDXmetro, 
+    ], alpha = 1/2, na.rm = TRUE) + geom_point(data = dfSubset[dfSubset$isOHSU, 
+    ], alpha = 2/3, color = rgb(0, 73, 144, max = 255), size = 5) + scale_y_log10(breaks = c(100, 
+    200, 400, 1000, 2000, 4000, 10000, 20000), labels = c("$100", "$200", "$400", 
+    "$1K", "$2K", "$4K", "$10K", "$20K")) + labs(x = "APC", y = "Average Estimated Submitted Charges ($1,000s)") + 
+    theme_bw() + theme(legend.position = "bottom", panel.grid.major.x = element_blank(), 
+    panel.grid.major.y = element_line(color = "grey"))
+```
+
+![plot of chunk AverageEstimatedSubmittedCharges](figure/AverageEstimatedSubmittedCharges.png) 
+
+
 List the APCs with their descriptions
 
 ```r
@@ -238,7 +257,7 @@ print(xtable(apc[, c("APCchar", "APCdesc")]), include.rownames = FALSE, type = "
 ```
 
 <!-- html table generated in R 3.0.0 by xtable 1.7-1 package -->
-<!-- Tue Jun 04 15:34:59 2013 -->
+<!-- Thu Jun 06 10:56:31 2013 -->
 <TABLE border=1>
 <TR> <TH> APCchar </TH> <TH> APCdesc </TH>  </TR>
   <TR> <TD> 0012 </TD> <TD> Level I Debridement &amp  Destruction </TD> </TR>
@@ -269,23 +288,4 @@ print(xtable(apc[, c("APCchar", "APCdesc")]), include.rownames = FALSE, type = "
   <TR> <TD> 0692 </TD> <TD> Level II Electronic Analysis of Devices </TD> </TR>
   <TR> <TD> 0698 </TD> <TD> Level II Eye Tests &amp  Treatments </TD> </TR>
    </TABLE>
-
-
-Plot each APC.
-* Blue dot is OHSU
-* Grey dots are Portland metro hospitals
-* Violins represent the nationwide distribution
-
-```r
-ggplot(dfSubset, aes(x = APCchar, y = Average.Estimated.Submitted.Charges)) + 
-    geom_violin(alpha = 1/2, fill = "grey") + geom_jitter(data = dfSubset[dfSubset$isPDXmetro, 
-    ], alpha = 1/2, na.rm = TRUE) + geom_point(data = dfSubset[dfSubset$isOHSU, 
-    ], alpha = 2/3, color = rgb(0, 73, 144, max = 255), size = 5) + scale_y_log10(breaks = c(100, 
-    200, 400, 1000, 2000, 4000, 10000, 20000), labels = c("$100", "$200", "$400", 
-    "$1K", "$2K", "$4K", "$10K", "$20K")) + labs(x = "APC", y = "Average Estimated Submitted Charges ($1,000s)") + 
-    theme_bw() + theme(legend.position = "bottom", panel.grid.major.x = element_blank(), 
-    panel.grid.major.y = element_line(color = "grey"))
-```
-
-![plot of chunk AverageEstimatedSubmittedCharges](figure/AverageEstimatedSubmittedCharges.png) 
 
